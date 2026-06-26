@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artikel | wafaabbas.com</title>
+  <meta name="description" content="Daftar artikel akuntansi, perpajakan, dan keuangan di wafaabbas.com.">
+  <link rel="stylesheet" href="assets/css/main.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">Artikel</h1>
+      <nav class="site-nav">
+        <a href="index.html">Beranda</a>
+        <a href="article.html">Artikel</a>
+        <a href="about.html">Tentang</a>
+        <a href="contact.html">Kontak</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="articles">
+      <h2>Semua artikel</h2>
+      <div id="article-list" class="article-list">
+        <!-- Diisi JS dari Supabase -->
+        <p class="muted" id="article-empty-state">
+          Belum ada artikel. Tambahkan artikel dari dashboard admin.
+        </p>
+      </div>
+    </section>
+
+    <section class="article-detail" id="article-detail" hidden>
+      <hr />
+      <article>
+        <h2 id="detail-title"></h2>
+        <p class="muted" id="detail-meta"></p>
+        <div id="detail-content"></div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>&copy; <span id="year"></span> Wafa Abbas.</small>
+    </div>
+  </footer>
+
+  <script src="services/supabase.js"></script>
+  <script src="assets/js/articles.js"></script>
+</body>
+</html>
