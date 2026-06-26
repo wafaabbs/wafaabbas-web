@@ -2,8 +2,8 @@
 // Modul kecil buat koneksi Supabase dari frontend (tanpa backend sendiri).
 
 // TODO: ganti dengan URL & anon key proyek Supabase lo
-const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+const SUPABASE_URL = "https://sjgsrposlucbkabxaodm.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_SVyecFKhxY6MiJKiewluJQ_OzQHFcXF";
 
 let supabaseClient = null;
 
