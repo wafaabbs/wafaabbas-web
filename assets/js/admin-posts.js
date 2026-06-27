@@ -1,5 +1,5 @@
 // assets/js/admin-posts.js
-// CMS sederhana untuk tabel "articles"
+// CMS sederhana untuk tabel "articles" dengan mode create/edit yang jelas
 
 document.addEventListener("DOMContentLoaded", () => {
   const yearSpan = document.getElementById("year");
@@ -12,11 +12,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const refreshBtn = document.getElementById("refresh-btn");
   const form = document.getElementById("article-form");
-  const resetBtn = document.getElementById("reset-btn");
+  const newArticleBtn = document.getElementById("new-article-btn");
+  const cancelEditBtn = document.getElementById("cancel-edit-btn");
 
   refreshBtn?.addEventListener("click", loadArticles);
   form?.addEventListener("submit", handleSubmit);
-  resetBtn?.addEventListener("click", resetForm);
+  newArticleBtn?.addEventListener("click", resetFormToCreate);
+  cancelEditBtn?.addEventListener("click", resetFormToCreate);
 
   loadArticles();
 });
@@ -70,7 +72,6 @@ async function loadArticles() {
     listEl.appendChild(row);
   });
 
-  // delegasi event klik
   listEl.onclick = handleListClick;
 }
 
@@ -103,11 +104,6 @@ async function loadArticleIntoForm(id) {
     return;
   }
 
-  const formMessage = document.getElementById("form-message");
-  if (formMessage) {
-    formMessage.textContent = "Mode edit: menyunting artikel yang sudah ada.";
-  }
-
   document.getElementById("article-id").value = data.id;
   document.getElementById("title").value = data.title || "";
   document.getElementById("slug").value = data.slug || "";
@@ -124,14 +120,36 @@ async function loadArticleIntoForm(id) {
   } else if (publishedInput) {
     publishedInput.value = "";
   }
+
+  setFormMode("edit");
 }
 
-function resetForm() {
+function resetFormToCreate() {
   const form = document.getElementById("article-form");
   form.reset();
   document.getElementById("article-id").value = "";
+  const publishedInput = document.getElementById("published_at");
+  if (publishedInput) publishedInput.value = "";
+  setFormMode("create");
+}
+
+function setFormMode(mode) {
+  const formModeLabel = document.getElementById("form-mode-label");
+  const cancelEditBtn = document.getElementById("cancel-edit-btn");
+  const saveBtn = document.getElementById("save-btn");
   const msg = document.getElementById("form-message");
-  if (msg) msg.textContent = "Form reset. Mode create artikel baru.";
+
+  if (mode === "edit") {
+    if (formModeLabel) formModeLabel.textContent = "Mode: edit artikel yang sudah ada";
+    if (cancelEditBtn) cancelEditBtn.style.display = "inline-block";
+    if (saveBtn) saveBtn.textContent = "Update artikel";
+    if (msg) msg.textContent = "Sedang mengedit artikel. Klik 'Batal edit' untuk kembali ke mode create.";
+  } else {
+    if (formModeLabel) formModeLabel.textContent = "Mode: buat artikel baru";
+    if (cancelEditBtn) cancelEditBtn.style.display = "none";
+    if (saveBtn) saveBtn.textContent = "Simpan artikel";
+    if (msg) msg.textContent = "";
+  }
 }
 
 async function handleSubmit(event) {
@@ -179,7 +197,7 @@ async function handleSubmit(event) {
   }
 
   if (formMessage) formMessage.textContent = "Artikel berhasil disimpan.";
-  resetForm();
+  resetFormToCreate();
   loadArticles();
 }
 

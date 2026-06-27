@@ -39,8 +39,13 @@
     </section>
 
     <section style="margin-top: 32px;">
-      <h2>Form artikel</h2>
-      <p class="muted">Dipakai untuk create atau update artikel.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div>
+          <h2>Form artikel</h2>
+          <p class="muted" id="form-mode-label">Mode: buat artikel baru</p>
+        </div>
+        <button type="button" id="new-article-btn">+ Artikel baru</button>
+      </div>
 
       <form id="article-form" style="margin-top: 16px; display: grid; gap: 10px; max-width: 640px;">
         <!-- hidden id untuk mode edit -->
@@ -84,9 +89,9 @@
           <input type="datetime-local" id="published_at" />
         </label>
 
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
           <button type="submit" id="save-btn">Simpan artikel</button>
-          <button type="button" id="reset-btn">Reset form</button>
+          <button type="button" id="cancel-edit-btn" style="display:none;">Batal edit</button>
         </div>
 
         <p class="muted" id="form-message"></p>
