@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login Admin | wafaabbas.com</title>
   <link rel="stylesheet" href="../assets/css/main.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="site-header">
@@ -21,19 +20,14 @@
     <section class="hero">
       <h2>Masuk ke dashboard artikel</h2>
       <p class="muted">
-        Login ini menggunakan Supabase Auth (email & password).
+        Ini login dummy hanya untuk prototype. Nanti akan diganti Supabase Auth yang beneran.
       </p>
     </section>
 
     <section style="margin-top: 24px; max-width: 380px;">
       <form id="login-form" style="display:grid;gap:12px;">
         <label>
-          Email
-          <input type="email" id="admin-email" required />
-        </label>
-
-        <label>
-          Password
+          Password admin
           <input type="password" id="admin-password" required />
         </label>
 
@@ -45,11 +39,10 @@
 
   <footer class="site-footer">
     <div class="container">
-      <small>Admin · <span id="year"></span></small>
+      <small>Admin prototype · <span id="year"></span></small>
     </div>
   </footer>
 
-  <script src="../services/supabase.js"></script>
   <script src="../assets/js/admin-auth.js"></script>
 </body>
 </html>

@@ -1,53 +1,41 @@
 // assets/js/admin-auth.js
-// Login admin pakai Supabase Auth (email & password)
+// Login dummy berbasis password tunggal + localStorage
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   const yearSpan = document.getElementById("year");
   if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
   const form = document.getElementById("login-form");
   form?.addEventListener("submit", handleLogin);
 
-  // Kalau sudah ada session aktif, langsung masuk dashboard
-  const { data: session } = await window.WafaSupabase.auth.getSession();
-  if (session) {
+  // Kalau sudah login, langsung lempar ke posts.html
+  if (isLoggedIn()) {
     window.location.href = "posts.html";
   }
 });
 
-async function handleLogin(event) {
-  event.preventDefault();
-  const emailInput = document.getElementById("admin-email");
-  const passInput = document.getElementById("admin-password");
-  const msg = document.getElementById("login-message");
+// GANTI ini dengan password yang cuma lo tau
+const DUMMY_ADMIN_PASSWORD = "wafa-admin-123";
 
-  const email = emailInput.value.trim();
-  const password = passInput.value;
-
-  if (!email || !password) {
-    if (msg) msg.textContent = "Email dan password wajib diisi.";
-    return;
-  }
-
-  const { data, error } = await window.WafaSupabase.auth.signIn(email, password);
-
-  if (error) {
-    console.error(error);
-    if (msg) msg.textContent = "Login gagal: " + (error.message || "periksa email/password.");
-    return;
-  }
-
-  if (msg) msg.textContent = "Login berhasil, mengalihkan...";
-  window.location.href = "posts.html";
+function isLoggedIn() {
+  return localStorage.getItem("wafa_admin") === "ok";
 }
 
-// Helper buat dipakai di admin-posts.js
+function handleLogin(event) {
+  event.preventDefault();
+  const input = document.getElementById("admin-password");
+  const msg = document.getElementById("login-message");
+  const value = input.value.trim();
+
+  if (value === DUMMY_ADMIN_PASSWORD) {
+    localStorage.setItem("wafa_admin", "ok");
+    if (msg) msg.textContent = "Login berhasil, mengalihkan...";
+    window.location.href = "posts.html";
+  } else {
+    if (msg) msg.textContent = "Password salah.";
+  }
+}
+
 window.WafaAdminAuth = {
-  async isLoggedIn() {
-    const { data: session } = await window.WafaSupabase.auth.getSession();
-    return !!session;
-  },
-  async logout() {
-    await window.WafaSupabase.auth.signOut();
-  },
+  isLoggedIn,
 };
