@@ -8,13 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("login-form");
   form?.addEventListener("submit", handleLogin);
 
-  // Kalau sudah login, langsung lempar ke posts.html
+  // Kalau sudah login, langsung masuk dashboard
   if (isLoggedIn()) {
     window.location.href = "posts.html";
   }
 });
 
-// GANTI ini dengan password yang cuma lo tau
+// GANTI ini kalau mau ubah password admin
 const DUMMY_ADMIN_PASSWORD = "wafa-admin-123";
 
 function isLoggedIn() {

@@ -1,111 +1,72 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin · Artikel | wafaabbas.com</title>
-  <link rel="stylesheet" href="../assets/css/main.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-</head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <h1 class="site-title">Admin · Artikel</h1>
-      <nav class="site-nav">
-        <a href="../index.html">Lihat situs</a>
-        <a href="posts.html">Artikel</a>
-      </nav>
-    </div>
-  </header>
+// assets/js/admin-posts.js
+// CMS sederhana untuk tabel "articles" dengan mode create/edit yang jelas
 
-  <main class="container">
-    <section class="hero">
-      <h2>Kelola artikel</h2>
-      <p class="muted">
-        Prototype CMS: belum ada login, jadi jangan share URL ini ke publik.
-        Data langsung tersimpan ke tabel <code>articles</code> di Supabase.
-      </p>
-    </section>
+document.addEventListener("DOMContentLoaded", () => {
+  const yearSpan = document.getElementById("year");
+  if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
-    <section class="articles" style="margin-top: 24px;">
-      <div class="section-header">
-        <h2>Daftar artikel</h2>
-        <button id="refresh-btn" type="button">Refresh</button>
+  // Proteksi sederhana: cek login dummy
+  if (!window.WafaAdminAuth || !window.WafaAdminAuth.isLoggedIn()) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  if (!window.WafaSupabase) {
+    console.error("Supabase belum dikonfigurasi di services/supabase.js");
+    return;
+  }
+
+  const refreshBtn = document.getElementById("refresh-btn");
+  const form = document.getElementById("article-form");
+  const newArticleBtn = document.getElementById("new-article-btn");
+  const cancelEditBtn = document.getElementById("cancel-edit-btn");
+
+  refreshBtn?.addEventListener("click", loadArticles);
+  form?.addEventListener("submit", handleSubmit);
+  newArticleBtn?.addEventListener("click", resetFormToCreate);
+  cancelEditBtn?.addEventListener("click", resetFormToCreate);
+
+  loadArticles();
+});
+
+async function loadArticles() {
+  const listEl = document.getElementById("admin-article-list");
+  const emptyEl = document.getElementById("admin-empty-state");
+  if (!listEl) return;
+
+  listEl.innerHTML = "<p class='muted'>Memuat artikel...</p>";
+
+  const client = window.WafaSupabase.getClient();
+  const { data, error } = await client
+    .from("articles")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    listEl.innerHTML = "<p class='muted'>Gagal memuat artikel.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = "";
+    if (emptyEl) emptyEl.style.display = "block";
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = "none";
+  listEl.innerHTML = "";
+
+  data.forEach((article) => {
+    const row = document.createElement("article");
+    row.className = "article-card";
+
+    row.innerHTML = `
+      <h3>${article.title}</h3>
+      <p class="muted">${article.excerpt || ""}</p>
+      <div class="article-meta">
+        <span>Slug: ${article.slug}</span> ·
+        <span>Status: ${article.status}</span> ·
+        <span>${formatDate(article.published_at) || "Belum dipublish"}</span>
       </div>
-
-      <div id="admin-article-list" class="article-list">
-        <p class="muted" id="admin-empty-state">Belum ada artikel.</p>
-      </div>
-    </section>
-
-    <section style="margin-top: 32px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div>
-          <h2>Form artikel</h2>
-          <p class="muted" id="form-mode-label">Mode: buat artikel baru</p>
-        </div>
-        <button type="button" id="new-article-btn">+ Artikel baru</button>
-      </div>
-
-      <form id="article-form" style="margin-top: 16px; display: grid; gap: 10px; max-width: 640px;">
-        <!-- hidden id untuk mode edit -->
-        <input type="hidden" id="article-id" />
-
-        <label>
-          Judul
-          <input type="text" id="title" required />
-        </label>
-
-        <label>
-          Slug (untuk URL, misal: <code>pph-21-karyawan</code>)
-          <input type="text" id="slug" required />
-        </label>
-
-        <label>
-          Excerpt (ringkasan singkat)
-          <textarea id="excerpt" rows="2"></textarea>
-        </label>
-
-        <label>
-          Konten (HTML sederhana dulu)
-          <textarea id="content" rows="6"></textarea>
-        </label>
-
-        <label>
-          Kategori
-          <input type="text" id="category" placeholder="Misal: Pajak, Akuntansi" />
-        </label>
-
-        <label>
-          Status
-          <select id="status">
-            <option value="draft">draft</option>
-            <option value="published">published</option>
-          </select>
-        </label>
-
-        <label>
-          Tanggal publikasi (optional, format: YYYY-MM-DD HH:MM)
-          <input type="datetime-local" id="published_at" />
-        </label>
-
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-          <button type="submit" id="save-btn">Simpan artikel</button>
-          <button type="button" id="cancel-edit-btn" style="display:none;">Batal edit</button>
-        </div>
-
-        <p class="muted" id="form-message"></p>
-      </form>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <small>Admin prototype · <span id="year"></span></small>
-    </div>
-  </footer>
-
-  <script src="../services/supabase.js"></script>
-  <script src="../assets/js/admin-posts.js"></script>
-</body>
-</html>
+      <div style="margin-top:8px; display:flex; gap:8px;">
