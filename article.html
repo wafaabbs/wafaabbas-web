@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Artikel | wafaabbas.com</title>
   <meta name="description" content="Daftar artikel akuntansi, perpajakan, dan keuangan di wafaabbas.com.">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="assets/css/main.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="site-header">
@@ -22,21 +22,31 @@
   </header>
 
   <main class="container">
-    <section class="articles">
+    <section class="hero">
       <h2>Semua artikel</h2>
+      <p class="muted">
+        Kumpulan tulisan tentang akuntansi, perpajakan, dan keuangan praktis.
+        Klik judul untuk membaca detail artikel.
+      </p>
+    </section>
+
+    <section class="articles" aria-labelledby="articles-heading" style="margin-top:20px;">
+      <div class="section-header">
+        <h2 id="articles-heading">Daftar artikel</h2>
+      </div>
+
       <div id="article-list" class="article-list">
-        <!-- Diisi JS dari Supabase -->
         <p class="muted" id="article-empty-state">
-          Belum ada artikel. Tambahkan artikel dari dashboard admin.
+          Belum ada artikel yang dipublikasikan.
         </p>
       </div>
     </section>
 
     <section class="article-detail" id="article-detail" hidden>
-      <hr />
+      <hr style="margin:24px 0;" />
       <article>
         <h2 id="detail-title"></h2>
-        <p class="muted" id="detail-meta"></p>
+        <p class="muted" id="detail-meta" style="margin-bottom:10px;"></p>
         <div id="detail-content"></div>
       </article>
     </section>
