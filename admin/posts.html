@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin · Artikel | wafaabbas.com</title>
+  <link rel="stylesheet" href="../assets/css/main.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">Admin · Artikel</h1>
+      <nav class="site-nav">
+        <a href="../index.html">Lihat situs</a>
+        <a href="posts.html">Artikel</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h2>Kelola artikel</h2>
+      <p class="muted">
+        Prototype CMS: belum ada login, jadi jangan share URL ini ke publik.
+        Data langsung tersimpan ke tabel <code>articles</code> di Supabase.
+      </p>
+    </section>
+
+    <section class="articles" style="margin-top: 24px;">
+      <div class="section-header">
+        <h2>Daftar artikel</h2>
+        <button id="refresh-btn" type="button">Refresh</button>
+      </div>
+
+      <div id="admin-article-list" class="article-list">
+        <p class="muted" id="admin-empty-state">Belum ada artikel.</p>
+      </div>
+    </section>
+
+    <section style="margin-top: 32px;">
+      <h2>Form artikel</h2>
+      <p class="muted">Dipakai untuk create atau update artikel.</p>
+
+      <form id="article-form" style="margin-top: 16px; display: grid; gap: 10px; max-width: 640px;">
+        <!-- hidden id untuk mode edit -->
+        <input type="hidden" id="article-id" />
+
+        <label>
+          Judul
+          <input type="text" id="title" required />
+        </label>
+
+        <label>
+          Slug (untuk URL, misal: <code>pph-21-karyawan</code>)
+          <input type="text" id="slug" required />
+        </label>
+
+        <label>
+          Excerpt (ringkasan singkat)
+          <textarea id="excerpt" rows="2"></textarea>
+        </label>
+
+        <label>
+          Konten (HTML sederhana dulu)
+          <textarea id="content" rows="6"></textarea>
+        </label>
+
+        <label>
+          Kategori
+          <input type="text" id="category" placeholder="Misal: Pajak, Akuntansi" />
+        </label>
+
+        <label>
+          Status
+          <select id="status">
+            <option value="draft">draft</option>
+            <option value="published">published</option>
+          </select>
+        </label>
+
+        <label>
+          Tanggal publikasi (optional, format: YYYY-MM-DD HH:MM)
+          <input type="datetime-local" id="published_at" />
+        </label>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button type="submit" id="save-btn">Simpan artikel</button>
+          <button type="button" id="reset-btn">Reset form</button>
+        </div>
+
+        <p class="muted" id="form-message"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>Admin prototype · <span id="year"></span></small>
+    </div>
+  </footer>
+
+  <script src="../services/supabase.js"></script>
+  <script src="../assets/js/admin-posts.js"></script>
+</body>
+</html>
