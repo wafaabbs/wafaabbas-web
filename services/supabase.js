@@ -1,7 +1,6 @@
 // services/supabase.js
-// Modul kecil buat koneksi Supabase dari frontend (tanpa backend sendiri).
+// Satu pintu koneksi Supabase untuk frontend & admin.
 
-// TODO: ganti dengan URL & anon key proyek Supabase lo
 const SUPABASE_URL = "https://sjgsrposlucbkabxaodm.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_SVyecFKhxY6MiJKiewluJQ_OzQHFcXF";
 
@@ -9,18 +8,41 @@ let supabaseClient = null;
 
 function getSupabaseClient() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.warn("Supabase belum dikonfigurasi. Isi SUPABASE_URL dan SUPABASE_ANON_KEY di services/supabase.js");
+    console.warn("Supabase belum dikonfigurasi.");
     return null;
   }
 
   if (supabaseClient) return supabaseClient;
-
-  // versi browser SDK v2 (nanti kita konkretkan setelah lo setup Supabase)
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   return supabaseClient;
 }
 
-// Helper: ambil artikel published
+// ========== AUTH ==========
+
+async function signIn(email, password) {
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: "Supabase not configured" };
+
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  return { data, error };
+}
+
+async function signOut() {
+  const client = getSupabaseClient();
+  if (!client) return { error: "Supabase not configured" };
+  const { error } = await client.auth.signOut();
+  return { error };
+}
+
+async function getSession() {
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: "Supabase not configured" };
+  const { data, error } = await client.auth.getSession();
+  return { data: data?.session ?? null, error };
+}
+
+// ========== DATA ==========
+
 async function fetchPublishedArticles() {
   const client = getSupabaseClient();
   if (!client) return { data: [], error: "Supabase not configured" };
@@ -34,7 +56,6 @@ async function fetchPublishedArticles() {
   return { data: data || [], error };
 }
 
-// Helper: ambil 1 artikel berdasarkan slug
 async function fetchArticleBySlug(slug) {
   const client = getSupabaseClient();
   if (!client) return { data: null, error: "Supabase not configured" };
@@ -49,9 +70,13 @@ async function fetchArticleBySlug(slug) {
   return { data, error };
 }
 
-// Export ke global biar bisa dipakai di file JS lain tanpa bundler
 window.WafaSupabase = {
   getClient: getSupabaseClient,
+  auth: {
+    signIn,
+    signOut,
+    getSession,
+  },
   fetchPublishedArticles,
   fetchArticleBySlug,
 };

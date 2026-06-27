@@ -1,11 +1,12 @@
 // assets/js/admin-posts.js
 // CMS sederhana untuk tabel "articles" dengan mode create/edit yang jelas
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const yearSpan = document.getElementById("year");
   if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
-  if (!window.WafaAdminAuth || !window.WafaAdminAuth.isLoggedIn()) {
+  // Proteksi: harus login via Supabase Auth
+  if (!window.WafaAdminAuth || !(await window.WafaAdminAuth.isLoggedIn())) {
     window.location.href = "login.html";
     return;
   }
