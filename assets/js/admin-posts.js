@@ -5,6 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const yearSpan = document.getElementById("year");
   if (yearSpan) yearSpan.textContent = new Date().getFullYear();
 
+  if (!window.WafaAdminAuth || !window.WafaAdminAuth.isLoggedIn()) {
+    window.location.href = "login.html";
+    return;
+  }
+
   if (!window.WafaSupabase) {
     console.error("Supabase belum dikonfigurasi di services/supabase.js");
     return;
