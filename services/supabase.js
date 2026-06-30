@@ -32,24 +32,7 @@ const WAFA_SUPABASE_CONFIG = {
 
   function assertSupabaseSdk() {
     if (!global.supabase || typeof global.supabase.createClient !== "function") {
-      throw new Error(
-        "Supabase SDK belum dimuat. Tambahkan script @supabase/supabase-js sebelum services/supabase.js."
-      );
-    }
-  }
-
-  function assertConfig() {
-    const hasUrl =
-      WAFA_SUPABASE_CONFIG.url &&
-      !WAFA_SUPABASE_CONFIG.url.includes("PASTE_SUPABASE_PROJECT_URL_HERE");
-    const hasAnonKey =
-      WAFA_SUPABASE_CONFIG.anonKey &&
-      !WAFA_SUPABASE_CONFIG.anonKey.includes("PASTE_SUPABASE_ANON_KEY_HERE");
-
-    if (!hasUrl || !hasAnonKey) {
-      throw new Error(
-        "Konfigurasi Supabase belum lengkap. Isi url dan anonKey di services/supabase.js."
-      );
+      throw new Error("Supabase SDK belum dimuat.");
     }
   }
 
@@ -59,7 +42,6 @@ const WAFA_SUPABASE_CONFIG = {
     }
 
     assertSupabaseSdk();
-    assertConfig();
 
     client = global.supabase.createClient(
       WAFA_SUPABASE_CONFIG.url,
@@ -94,11 +76,31 @@ const WAFA_SUPABASE_CONFIG = {
     return new Date().toISOString();
   }
 
+  function normalizeSupabaseError(error) {
+    if (!error) {
+      return new Error("Terjadi kesalahan tidak diketahui.");
+    }
+
+    if (error.code === "23505") {
+      return new Error(
+        "Slug sudah digunakan artikel lain. Ganti slug dengan versi yang unik."
+      );
+    }
+
+    if (error.code === "42501") {
+      return new Error(
+        "Akses ditolak oleh Supabase. Periksa login admin atau RLS policy."
+      );
+    }
+
+    return new Error(error.message || "Request ke Supabase gagal.");
+  }
+
   async function unwrapQuery(query) {
     const { data, error } = await query;
 
     if (error) {
-      throw error;
+      throw normalizeSupabaseError(error);
     }
 
     return data;
@@ -131,7 +133,7 @@ const WAFA_SUPABASE_CONFIG = {
       const { data, error } = await getClient().auth.getSession();
 
       if (error) {
-        throw error;
+        throw normalizeSupabaseError(error);
       }
 
       return data.session;
@@ -141,7 +143,7 @@ const WAFA_SUPABASE_CONFIG = {
       const { data, error } = await getClient().auth.getUser();
 
       if (error) {
-        throw error;
+        throw normalizeSupabaseError(error);
       }
 
       return data.user;
@@ -154,7 +156,7 @@ const WAFA_SUPABASE_CONFIG = {
       });
 
       if (error) {
-        throw error;
+        throw normalizeSupabaseError(error);
       }
 
       return data;
@@ -164,7 +166,7 @@ const WAFA_SUPABASE_CONFIG = {
       const { error } = await getClient().auth.signOut();
 
       if (error) {
-        throw error;
+        throw normalizeSupabaseError(error);
       }
     },
 
@@ -172,7 +174,7 @@ const WAFA_SUPABASE_CONFIG = {
       return getClient().auth.onAuthStateChange(callback);
     },
 
-    async requireSession(redirectTo = "/admin/login.html") {
+    async requireSession(redirectTo = "./login.html") {
       const session = await this.getSession();
 
       if (!session) {
@@ -248,36 +250,6 @@ const WAFA_SUPABASE_CONFIG = {
       return unwrapQuery(
         getArticlesTable()
           .update(payload)
-          .eq("id", id)
-          .select(ARTICLE_COLUMNS)
-          .single()
-      );
-    },
-
-    async publish(id) {
-      const now = getTimestamp();
-
-      return unwrapQuery(
-        getArticlesTable()
-          .update({
-            status: ARTICLE_STATUS.PUBLISHED,
-            published_at: now,
-            updated_at: now,
-          })
-          .eq("id", id)
-          .select(ARTICLE_COLUMNS)
-          .single()
-      );
-    },
-
-    async unpublish(id) {
-      return unwrapQuery(
-        getArticlesTable()
-          .update({
-            status: ARTICLE_STATUS.DRAFT,
-            published_at: null,
-            updated_at: getTimestamp(),
-          })
           .eq("id", id)
           .select(ARTICLE_COLUMNS)
           .single()
