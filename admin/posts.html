@@ -3,182 +3,74 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Posts | Wafa Abbas CMS</title>
 
   <link rel="stylesheet" href="../assets/css/admin.css" />
 </head>
 <body class="admin-body">
-  <div class="admin-shell">
-    <aside class="admin-sidebar">
-      <div class="admin-brand">
-        <span class="admin-brand-mark">W</span>
-        <div>
-          <strong>Wafa Abbas</strong>
-          <small>Content Studio</small>
-        </div>
+  <header class="admin-header">
+    <div>
+      <h1>Posts</h1>
+      <p>Kelola artikel website.</p>
+    </div>
+
+    <nav class="admin-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./posts.html">Posts</a>
+      <a href="../index.html">View Site</a>
+      <button type="button" id="logoutButton">Logout</button>
+    </nav>
+  </header>
+
+  <main class="admin-container">
+    <section class="admin-actions">
+      <div>
+        <h2>Daftar Artikel</h2>
+        <p id="postsSummary">Memuat artikel...</p>
       </div>
 
-      <nav class="admin-nav" aria-label="Admin navigation">
-        <a href="./posts.html" class="admin-nav-link active">Posts</a>
-        <a href="../index.html" class="admin-nav-link">View Site</a>
-      </nav>
+      <a href="./editor.html" class="admin-button-primary">New Post</a>
+    </section>
 
-      <button type="button" class="admin-ghost-button" id="logoutButton">
-        Logout
-      </button>
-    </aside>
+    <section class="admin-card">
+      <div class="admin-filters">
+        <input
+          type="search"
+          id="postSearchInput"
+          placeholder="Cari artikel..."
+          autocomplete="off"
+        />
 
-    <main class="admin-main">
-      <header class="admin-topbar">
-        <div>
-          <p class="admin-kicker">CMS Dashboard</p>
-          <h1>Posts</h1>
-        </div>
-
-        <button type="button" class="admin-primary-button" id="newPostButton">
-          New Post
-        </button>
-      </header>
-
-      <section class="admin-stats-grid" aria-label="Post statistics">
-        <article class="admin-stat-card">
-          <span>Total</span>
-          <strong id="totalPostsCount">0</strong>
-        </article>
-
-        <article class="admin-stat-card">
-          <span>Published</span>
-          <strong id="publishedPostsCount">0</strong>
-        </article>
-
-        <article class="admin-stat-card">
-          <span>Draft</span>
-          <strong id="draftPostsCount">0</strong>
-        </article>
-      </section>
-
-      <section class="admin-panel">
-        <div class="admin-panel-header">
-          <div>
-            <h2>All Posts</h2>
-            <p>Kelola draft dan artikel yang sudah publish.</p>
-          </div>
-
-          <div class="admin-toolbar">
-            <input
-              type="search"
-              id="postSearchInput"
-              class="admin-search-input"
-              placeholder="Search posts"
-              autocomplete="off"
-            />
-
-            <select id="postStatusFilter" class="admin-select">
-              <option value="">All status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Status</th>
-                <th>Updated</th>
-                <th class="admin-table-actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="postsTableBody">
-              <tr>
-                <td colspan="5" class="admin-empty-cell">Loading posts...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <dialog class="admin-dialog" id="postDialog">
-    <form method="dialog" class="admin-post-form" id="postForm">
-      <div class="admin-dialog-header">
-        <div>
-          <p class="admin-kicker">Editor</p>
-          <h2 id="postDialogTitle">New Post</h2>
-        </div>
-
-        <button type="button" class="admin-icon-button" id="closePostDialogButton" aria-label="Close editor">
-          ×
-        </button>
+        <select id="postStatusFilter">
+          <option value="">Semua status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
       </div>
 
-      <input type="hidden" id="postIdInput" />
-
-      <div class="admin-form-grid">
-        <label class="admin-field">
-          <span>Title</span>
-          <input type="text" id="postTitleInput" required />
-        </label>
-
-        <label class="admin-field">
-          <span>Slug</span>
-          <input type="text" id="postSlugInput" required />
-        </label>
-
-        <label class="admin-field">
-          <span>Category</span>
-          <input type="text" id="postCategoryInput" placeholder="Akuntansi" />
-        </label>
-
-        <label class="admin-field">
-          <span>Status</span>
-          <select id="postStatusInput">
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
-        </label>
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Judul</th>
+              <th>Kategori</th>
+              <th>Status</th>
+              <th>Update</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="postsTableBody">
+            <tr>
+              <td colspan="5">Memuat artikel...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+    </section>
+  </main>
 
-      <label class="admin-field">
-        <span>Excerpt</span>
-        <textarea id="postExcerptInput" rows="3"></textarea>
-      </label>
-
-      <label class="admin-field">
-        <span>Content</span>
-        <textarea id="postContentInput" rows="14" required></textarea>
-      </label>
-
-      <label class="admin-field">
-        <span>Thumbnail URL</span>
-        <input type="url" id="postThumbnailInput" placeholder="https://..." />
-      </label>
-
-      <p class="admin-form-message" id="postFormMessage"></p>
-
-      <div class="admin-dialog-actions">
-        <button type="button" class="admin-danger-button" id="deletePostButton">
-          Delete
-        </button>
-
-        <div>
-          <button type="button" class="admin-secondary-button" id="saveDraftButton">
-            Save Draft
-          </button>
-
-          <button type="submit" class="admin-primary-button" id="publishPostButton">
-            Save Post
-          </button>
-        </div>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="../services/supabase.js"></script>
   <script src="../assets/js/admin-posts.js"></script>
 </body>

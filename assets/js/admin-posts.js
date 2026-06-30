@@ -1,37 +1,21 @@
 (function initAdminPosts() {
   "use strict";
 
+  if (!window.WafaSupabase) {
+    return;
+  }
+
   const { auth, articles } = window.WafaSupabase;
 
   const elements = {
     logoutButton: document.getElementById("logoutButton"),
-    newPostButton: document.getElementById("newPostButton"),
-    totalPostsCount: document.getElementById("totalPostsCount"),
-    publishedPostsCount: document.getElementById("publishedPostsCount"),
-    draftPostsCount: document.getElementById("draftPostsCount"),
+    postsSummary: document.getElementById("postsSummary"),
     postSearchInput: document.getElementById("postSearchInput"),
     postStatusFilter: document.getElementById("postStatusFilter"),
     postsTableBody: document.getElementById("postsTableBody"),
-    postDialog: document.getElementById("postDialog"),
-    postForm: document.getElementById("postForm"),
-    postDialogTitle: document.getElementById("postDialogTitle"),
-    closePostDialogButton: document.getElementById("closePostDialogButton"),
-    postIdInput: document.getElementById("postIdInput"),
-    postTitleInput: document.getElementById("postTitleInput"),
-    postSlugInput: document.getElementById("postSlugInput"),
-    postCategoryInput: document.getElementById("postCategoryInput"),
-    postStatusInput: document.getElementById("postStatusInput"),
-    postExcerptInput: document.getElementById("postExcerptInput"),
-    postContentInput: document.getElementById("postContentInput"),
-    postThumbnailInput: document.getElementById("postThumbnailInput"),
-    postFormMessage: document.getElementById("postFormMessage"),
-    deletePostButton: document.getElementById("deletePostButton"),
-    saveDraftButton: document.getElementById("saveDraftButton"),
-    publishPostButton: document.getElementById("publishPostButton"),
   };
 
   let posts = [];
-  let activePostId = null;
 
   function formatDate(value) {
     if (!value) {
@@ -45,15 +29,25 @@
     }).format(new Date(value));
   }
 
-  function setMessage(message, type = "neutral") {
-    elements.postFormMessage.textContent = message;
-    elements.postFormMessage.dataset.type = type;
+  function escapeHtml(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  function setLoading(isLoading) {
-    elements.publishPostButton.disabled = isLoading;
-    elements.saveDraftButton.disabled = isLoading;
-    elements.deletePostButton.disabled = isLoading;
+  function setSummary() {
+    const total = posts.length;
+    const published = posts.filter(
+      (post) => post.status === articles.status.PUBLISHED
+    ).length;
+    const draft = posts.filter(
+      (post) => post.status === articles.status.DRAFT
+    ).length;
+
+    elements.postsSummary.textContent = `${total} artikel · ${published} published · ${draft} draft`;
   }
 
   function getFilteredPosts() {
@@ -63,7 +57,7 @@
     return posts.filter((post) => {
       const matchesSearch = !search
         ? true
-        : [post.title, post.excerpt, post.category]
+        : [post.title, post.excerpt, post.category, post.slug]
             .filter(Boolean)
             .some((value) => value.toLowerCase().includes(search));
 
@@ -73,168 +67,68 @@
     });
   }
 
-  function renderStats() {
-    const publishedCount = posts.filter(
-      (post) => post.status === articles.status.PUBLISHED
-    ).length;
-    const draftCount = posts.filter(
-      (post) => post.status === articles.status.DRAFT
-    ).length;
-
-    elements.totalPostsCount.textContent = posts.length;
-    elements.publishedPostsCount.textContent = publishedCount;
-    elements.draftPostsCount.textContent = draftCount;
-  }
-
   function renderPosts() {
     const filteredPosts = getFilteredPosts();
 
     if (!filteredPosts.length) {
       elements.postsTableBody.innerHTML = `
         <tr>
-          <td colspan="5" class="admin-empty-cell">Belum ada artikel yang cocok.</td>
+          <td colspan="5">Tidak ada artikel yang cocok.</td>
         </tr>
       `;
       return;
     }
 
     elements.postsTableBody.innerHTML = filteredPosts
-      .map(
-        (post) => `
+      .map((post) => {
+        const id = encodeURIComponent(post.id);
+        const title = escapeHtml(post.title || "Untitled");
+        const category = escapeHtml(post.category || "-");
+        const status = escapeHtml(post.status || "draft");
+        const updatedAt = formatDate(post.updated_at || post.created_at);
+
+        return `
           <tr>
             <td>
-              <button type="button" class="admin-title-button" data-action="edit" data-id="${post.id}">
-                <strong>${post.title || "Untitled"}</strong>
-                <span>${post.slug || "-"}</span>
-              </button>
+              <strong>${title}</strong>
+              <div class="admin-muted">${escapeHtml(post.slug || "")}</div>
             </td>
-            <td>${post.category || "-"}</td>
+            <td>${category}</td>
             <td>
-              <span class="admin-status admin-status-${post.status}">
-                ${post.status}
+              <span class="admin-status admin-status-${status}">
+                ${status}
               </span>
             </td>
-            <td>${formatDate(post.updated_at || post.created_at)}</td>
-            <td class="admin-table-actions">
-              <button type="button" class="admin-secondary-button" data-action="edit" data-id="${post.id}">
+            <td>${updatedAt}</td>
+            <td>
+              <a class="admin-button-small" href="./editor.html?id=${id}">
                 Edit
-              </button>
+              </a>
             </td>
           </tr>
-        `
-      )
+        `;
+      })
       .join("");
-  }
-
-  function resetForm() {
-    activePostId = null;
-    elements.postForm.reset();
-    elements.postIdInput.value = "";
-    elements.postStatusInput.value = articles.status.DRAFT;
-    elements.postDialogTitle.textContent = "New Post";
-    elements.deletePostButton.hidden = true;
-    setMessage("");
-  }
-
-  function getFormPayload(status) {
-    return {
-      title: elements.postTitleInput.value,
-      slug: elements.postSlugInput.value,
-      excerpt: elements.postExcerptInput.value,
-      content: elements.postContentInput.value,
-      category: elements.postCategoryInput.value,
-      status,
-      thumbnail_url: elements.postThumbnailInput.value,
-    };
-  }
-
-  function fillForm(post) {
-    activePostId = post.id;
-    elements.postIdInput.value = post.id;
-    elements.postTitleInput.value = post.title || "";
-    elements.postSlugInput.value = post.slug || "";
-    elements.postCategoryInput.value = post.category || "";
-    elements.postStatusInput.value = post.status || articles.status.DRAFT;
-    elements.postExcerptInput.value = post.excerpt || "";
-    elements.postContentInput.value = post.content || "";
-    elements.postThumbnailInput.value = post.thumbnail_url || "";
-    elements.postDialogTitle.textContent = "Edit Post";
-    elements.deletePostButton.hidden = false;
-    setMessage("");
-  }
-
-  function openDialog(post = null) {
-    resetForm();
-
-    if (post) {
-      fillForm(post);
-    }
-
-    elements.postDialog.showModal();
-    elements.postTitleInput.focus();
-  }
-
-  function closeDialog() {
-    elements.postDialog.close();
   }
 
   async function loadPosts() {
     elements.postsTableBody.innerHTML = `
       <tr>
-        <td colspan="5" class="admin-empty-cell">Loading posts...</td>
+        <td colspan="5">Memuat artikel...</td>
       </tr>
     `;
 
-    posts = await articles.listAdmin();
-    renderStats();
-    renderPosts();
-  }
-
-  async function savePost(status) {
-    setLoading(true);
-    setMessage("Menyimpan artikel...");
-
     try {
-      const payload = getFormPayload(status);
-
-      if (activePostId) {
-        await articles.update(activePostId, payload);
-      } else {
-        await articles.create(payload);
-      }
-
-      setMessage("Artikel berhasil disimpan.", "success");
-      closeDialog();
-      await loadPosts();
+      posts = await articles.listAdmin();
+      setSummary();
+      renderPosts();
     } catch (error) {
-      setMessage(error.message || "Gagal menyimpan artikel.", "error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function deleteActivePost() {
-    if (!activePostId) {
-      return;
-    }
-
-    const confirmed = window.confirm("Hapus artikel ini secara permanen?");
-
-    if (!confirmed) {
-      return;
-    }
-
-    setLoading(true);
-    setMessage("Menghapus artikel...");
-
-    try {
-      await articles.delete(activePostId);
-      closeDialog();
-      await loadPosts();
-    } catch (error) {
-      setMessage(error.message || "Gagal menghapus artikel.", "error");
-    } finally {
-      setLoading(false);
+      elements.postsSummary.textContent = "Gagal memuat artikel.";
+      elements.postsTableBody.innerHTML = `
+        <tr>
+          <td colspan="5">${escapeHtml(error.message || "Gagal memuat artikel.")}</td>
+        </tr>
+      `;
     }
   }
 
@@ -245,49 +139,8 @@
 
   function bindEvents() {
     elements.logoutButton.addEventListener("click", handleLogout);
-
-    elements.newPostButton.addEventListener("click", () => {
-      openDialog();
-    });
-
-    elements.closePostDialogButton.addEventListener("click", closeDialog);
-
     elements.postSearchInput.addEventListener("input", renderPosts);
     elements.postStatusFilter.addEventListener("change", renderPosts);
-
-    elements.postTitleInput.addEventListener("input", () => {
-      if (!activePostId || !elements.postSlugInput.value.trim()) {
-        elements.postSlugInput.value = articles.normalizeSlug(
-          elements.postTitleInput.value
-        );
-      }
-    });
-
-    elements.postsTableBody.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-action='edit']");
-
-      if (!button) {
-        return;
-      }
-
-      const post = posts.find((item) => String(item.id) === button.dataset.id);
-
-      if (post) {
-        openDialog(post);
-      }
-    });
-
-    elements.saveDraftButton.addEventListener("click", () => {
-      elements.postStatusInput.value = articles.status.DRAFT;
-      savePost(articles.status.DRAFT);
-    });
-
-    elements.deletePostButton.addEventListener("click", deleteActivePost);
-
-    elements.postForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      savePost(elements.postStatusInput.value);
-    });
   }
 
   async function boot() {
@@ -296,11 +149,10 @@
       bindEvents();
       await loadPosts();
     } catch (error) {
+      elements.postsSummary.textContent = "Session tidak valid.";
       elements.postsTableBody.innerHTML = `
         <tr>
-          <td colspan="5" class="admin-empty-cell">
-            ${error.message || "Gagal memuat dashboard."}
-          </td>
+          <td colspan="5">${escapeHtml(error.message || "Silakan login ulang.")}</td>
         </tr>
       `;
     }
