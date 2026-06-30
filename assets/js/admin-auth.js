@@ -1,142 +1,71 @@
-// assets/js/admin-auth.js
+(function initAdminAuth() {
+  "use strict";
 
-const POSTS_PAGE = '/admin/posts.html';
+  const { auth } = window.WafaSupabase;
 
-// Ambil helper auth dari services/supabase.js
-function getAuth() {
-  if (!window.WafaSupabase || !window.WafaSupabase.auth) {
-    console.error(
-      'WafaSupabase.auth tidak ditemukan. Pastikan services/supabase.js dimuat lebih dulu.'
-    );
-    return null;
+  const elements = {
+    loginForm: document.getElementById("loginForm"),
+    emailInput: document.getElementById("emailInput"),
+    passwordInput: document.getElementById("passwordInput"),
+    loginMessage: document.getElementById("loginMessage"),
+    loginButton: document.getElementById("loginButton"),
+  };
+
+  function setMessage(message, type = "neutral") {
+    elements.loginMessage.textContent = message;
+    elements.loginMessage.dataset.type = type;
   }
 
-  return window.WafaSupabase.auth;
-}
-
-// Helper status
-function setStatus(message = '', type = 'info') {
-  const statusEl =
-    document.getElementById('status') ||
-    document.getElementById('login-status');
-
-  if (!statusEl) return;
-
-  statusEl.textContent = message;
-
-  statusEl.classList.remove(
-    'status-info',
-    'status-success',
-    'status-error'
-  );
-
-  if (message) {
-    statusEl.classList.add(`status-${type}`);
-  }
-}
-
-// Enable / disable form
-function setFormDisabled(disabled) {
-  const form = document.getElementById('login-form');
-  if (!form) return;
-
-  form.querySelectorAll('input, button').forEach((el) => {
-    el.disabled = disabled;
-  });
-}
-
-// Cek session login
-async function checkExistingSession() {
-  const auth = getAuth();
-  if (!auth) {
-    setStatus('Supabase belum siap.', 'error');
-    return;
+  function setLoading(isLoading) {
+    elements.loginButton.disabled = isLoading;
+    elements.loginButton.textContent = isLoading ? "Logging in..." : "Login";
   }
 
-  try {
+  async function redirectIfAuthenticated() {
     const session = await auth.getSession();
 
     if (session) {
-      setStatus('Session ditemukan. Mengarahkan...', 'success');
-
-      setTimeout(() => {
-        window.location.href = POSTS_PAGE;
-      }, 300);
-
-      return true;
+      window.location.href = "./posts.html";
     }
-
-    return false;
-  } catch (err) {
-    console.error(err);
-    setStatus('Gagal memeriksa session.', 'error');
-    return false;
-  }
-}
-
-// Login handler
-function initLoginForm() {
-  const form = document.getElementById('login-form');
-
-  if (!form) {
-    console.warn('login-form tidak ditemukan.');
-    return;
   }
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function handleLogin(event) {
+    event.preventDefault();
 
-    const auth = getAuth();
-    if (!auth) return;
-
-    const email =
-      document.getElementById('email')?.value.trim() || '';
-    const password =
-      document.getElementById('password')?.value || '';
+    const email = elements.emailInput.value.trim();
+    const password = elements.passwordInput.value;
 
     if (!email || !password) {
-      setStatus('Email dan password wajib diisi.', 'error');
+      setMessage("Email dan password wajib diisi.", "error");
       return;
     }
 
+    setLoading(true);
+    setMessage("Memeriksa akun...");
+
     try {
-      setFormDisabled(true);
-      setStatus('Sedang login...', 'info');
-
-      const data = await auth.signIn(email, password);
-
-      console.log('Login sukses:', data);
-
-      setStatus(
-        'Login berhasil. Mengarahkan ke dashboard...',
-        'success'
-      );
-
-      setTimeout(() => {
-        window.location.href = POSTS_PAGE;
-      }, 500);
-    } catch (err) {
-      console.error(err);
-
-      if (
-        err.message &&
-        err.message.toLowerCase().includes('invalid login credentials')
-      ) {
-        setStatus('Email atau password salah.', 'error');
-      } else {
-        setStatus(err.message || 'Login gagal.', 'error');
-      }
-
-      setFormDisabled(false);
+      await auth.signIn(email, password);
+      setMessage("Login berhasil. Membuka dashboard...", "success");
+      window.location.href = "./posts.html";
+    } catch (error) {
+      setMessage(error.message || "Login gagal. Periksa email dan password.", "error");
+    } finally {
+      setLoading(false);
     }
-  });
-}
-
-// Init
-document.addEventListener('DOMContentLoaded', async () => {
-  const loggedIn = await checkExistingSession();
-
-  if (!loggedIn) {
-    initLoginForm();
   }
-});
+
+  function bindEvents() {
+    elements.loginForm.addEventListener("submit", handleLogin);
+  }
+
+  async function boot() {
+    try {
+      bindEvents();
+      await redirectIfAuthenticated();
+    } catch (error) {
+      setMessage(error.message || "Gagal menyiapkan halaman login.", "error");
+    }
+  }
+
+  boot();
+})();
