@@ -1,103 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Dashboard</title>
-    <style>
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #111827;
-        color: #f3f4f6;
-      }
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-      .wrap {
-        max-width: 760px;
-        margin: 0 auto;
-        padding: 48px 24px;
-      }
+  <title>Dashboard | Wafa Abbas CMS</title>
 
-      .card {
-        background: #1f2937;
-        padding: 24px;
-        border-radius: 16px;
-        border: 1px solid #374151;
-      }
+  <link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <div>
+      <h1>Admin Dashboard</h1>
+      <p>Ringkasan CMS wafaabbas.com.</p>
+    </div>
 
-      button {
-        border: 0;
-        border-radius: 999px;
-        padding: 10px 16px;
-        cursor: pointer;
-        background: #ef4444;
-        color: white;
-      }
+    <nav class="admin-nav">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./posts.html">Posts</a>
+      <a href="../index.html">View Site</a>
+      <button type="button" id="logoutButton">Logout</button>
+    </nav>
+  </header>
 
-      .muted {
-        color: #9ca3af;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-      <section class="card">
-        <h1>Admin Dashboard</h1>
-        <p id="message" class="muted">Checking your sign-in status…</p>
-        <div id="user-info"></div>
-        <button id="sign-out" type="button" style="margin-top: 16px; display: none;">Sign out</button>
-      </section>
-    </main>
+  <main class="admin-container">
+    <section class="admin-actions">
+      <div>
+        <h2>Overview</h2>
+        <p id="dashboardMessage">Memuat dashboard...</p>
+      </div>
 
-    <script>
-      window.SUPABASE_URL = window.SUPABASE_URL || 'https://YOUR_PROJECT_REF.supabase.co';
-      window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'YOUR_ANON_KEY';
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../services/supabase.js"></script>
-    <script>
-      const messageEl = document.getElementById('message');
-      const userInfoEl = document.getElementById('user-info');
-      const signOutButton = document.getElementById('sign-out');
+      <a href="./editor.html" class="admin-button-primary">New Post</a>
+    </section>
 
-      async function loadDashboard() {
-        try {
-          const config = window.supabaseAuth.getConfigStatus();
-          if (!config.configured) {
-            messageEl.textContent = 'Add your Supabase project credentials to enable GitHub sign-in.';
-            return;
-          }
+    <section class="admin-card">
+      <table class="admin-table">
+        <tbody>
+          <tr>
+            <th>Total Artikel</th>
+            <td id="totalPostsCount">0</td>
+          </tr>
+          <tr>
+            <th>Published</th>
+            <td id="publishedPostsCount">0</td>
+          </tr>
+          <tr>
+            <th>Draft</th>
+            <td id="draftPostsCount">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
 
-          const { data: { session } } = await window.supabaseAuth.getSession();
-          if (!session) {
-            messageEl.textContent = 'You are not signed in yet.';
-            window.location.href = './login.html';
-            return;
-          }
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../services/supabase.js"></script>
+  <script>
+    (async function initDashboard() {
+      const { auth, articles } = window.WafaSupabase;
 
-          const user = session.user;
-          messageEl.textContent = `Signed in as ${user.user_metadata?.full_name || user.email || 'GitHub user'}.`;
-          userInfoEl.innerHTML = `
-            <p><strong>Name:</strong> ${user.user_metadata?.full_name || 'Unknown'}</p>
-            <p><strong>Email:</strong> ${user.email || 'Not provided'}</p>
-            <p><strong>Provider:</strong> ${user.app_metadata?.provider || 'GitHub'}</p>
-          `;
-          signOutButton.style.display = 'inline-block';
-        } catch (error) {
-          messageEl.textContent = error.message || 'Unable to load the dashboard.';
-        }
-      }
+      const logoutButton = document.getElementById("logoutButton");
+      const dashboardMessage = document.getElementById("dashboardMessage");
+      const totalPostsCount = document.getElementById("totalPostsCount");
+      const publishedPostsCount = document.getElementById("publishedPostsCount");
+      const draftPostsCount = document.getElementById("draftPostsCount");
 
-      signOutButton.addEventListener('click', async () => {
-        try {
-          await window.supabaseAuth.signOut();
-          window.location.href = './login.html';
-        } catch (error) {
-          messageEl.textContent = error.message || 'Unable to sign out.';
-        }
+      logoutButton.addEventListener("click", async function () {
+        await auth.signOut();
+        window.location.href = "./login.html";
       });
 
-      loadDashboard();
-    </script>
-  </body>
+      try {
+        await auth.requireSession("./login.html");
+
+        const posts = await articles.listAdmin();
+        const published = posts.filter((post) => post.status === "published");
+        const draft = posts.filter((post) => post.status === "draft");
+
+        totalPostsCount.textContent = posts.length;
+        publishedPostsCount.textContent = published.length;
+        draftPostsCount.textContent = draft.length;
+
+        dashboardMessage.textContent = "Dashboard siap digunakan.";
+      } catch (error) {
+        dashboardMessage.textContent =
+          error.message || "Gagal memuat dashboard.";
+      }
+    })();
+  </script>
+</body>
 </html>
