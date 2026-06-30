@@ -3,18 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>wafaabbas.com | Blog Akuntansi, Pajak, & Keuangan</title>
-  <meta name="description" content="Blog edukasi akuntansi, perpajakan, dan keuangan oleh Wafa Abbas.">
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <meta
+    name="description"
+    content="Blog edukasi akuntansi, perpajakan, dan keuangan oleh Wafa Abbas."
+  />
+
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="container">
       <h1 class="site-title">wafaabbas.com</h1>
-      <p class="site-tagline">Blog akuntansi, perpajakan, dan keuangan untuk praktisi Indonesia.</p>
+      <p class="site-tagline">
+        Blog akuntansi, perpajakan, dan keuangan untuk praktisi Indonesia.
+      </p>
 
-      <nav class="site-nav">
+      <nav class="site-nav" aria-label="Navigasi utama">
         <a href="index.html">Beranda</a>
         <a href="article.html">Artikel</a>
         <a href="about.html">Tentang</a>
@@ -27,8 +33,8 @@
     <section class="hero">
       <h2>Belajar finansial dari sudut pandang praktisi.</h2>
       <p>
-        Versi prototype: fokus ke alur artikel dulu. Desain, branding, dan fitur lanjutan
-        (template, kalkulator, membership) akan nyusul setelah fondasi teknis beres.
+        Versi prototype: fokus ke alur artikel dulu. Desain, branding, dan fitur
+        lanjutan akan menyusul setelah fondasi teknis beres.
       </p>
     </section>
 
@@ -38,11 +44,11 @@
         <a href="article.html" class="link-small">Lihat semua</a>
       </div>
 
-      <div id="article-list" class="article-list">
-        <!-- Nanti diisi lewat JavaScript dari Supabase -->
-        <p class="muted" id="article-empty-state">
-          Belum ada artikel yang dipublikasikan. Tambahkan artikel dari halaman admin.
-        </p>
+      <div id="article-list" class="article-list" data-articles-list>
+        <article class="article-card">
+          <h3>Memuat artikel...</h3>
+          <p>Mohon tunggu sebentar.</p>
+        </article>
       </div>
     </section>
   </main>
@@ -53,6 +59,7 @@
     </div>
   </footer>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="services/supabase.js"></script>
   <script src="assets/js/main.js"></script>
 </body>

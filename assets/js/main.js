@@ -1,68 +1,105 @@
-// assets/js/main.js
-// Script ringan untuk halaman index (home)
+(function initPublicHome() {
+  "use strict";
 
-// Tahun di footer
-document.addEventListener("DOMContentLoaded", () => {
-  const yearSpan = document.getElementById("year");
-  if (yearSpan) {
-    yearSpan.textContent = new Date().getFullYear();
-  }
+  const articlesList =
+    document.getElementById("articlesList") ||
+    document.getElementById("articleList") ||
+    document.querySelector("[data-articles-list]") ||
+    document.querySelector(".article-list");
 
-  // Coba isi daftar artikel dari Supabase (kalau sudah dikonfigurasi)
-  renderHomepageArticles();
-});
-
-async function renderHomepageArticles() {
-  const listEl = document.getElementById("article-list");
-  const emptyEl = document.getElementById("article-empty-state");
-  if (!listEl) return;
-
-  // Kalau Supabase belum diset, biarkan empty state muncul
-  if (!window.WafaSupabase) return;
-
-  const { fetchPublishedArticles } = window.WafaSupabase;
-  const { data, error } = await fetchPublishedArticles();
-
-  if (error) {
-    console.warn("Gagal load artikel:", error);
+  if (!articlesList || !window.WafaSupabase) {
     return;
   }
 
-  if (!data || data.length === 0) {
-    if (emptyEl) emptyEl.style.display = "block";
-    return;
+  const { articles } = window.WafaSupabase;
+
+  function formatDate(value) {
+    if (!value) {
+      return "";
+    }
+
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(value));
   }
 
-  if (emptyEl) emptyEl.style.display = "none";
-  listEl.innerHTML = "";
+  function escapeHtml(value) {
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-  // Ambil beberapa artikel terbaru saja (misal 3)
-  const latest = data.slice(0, 3);
-  latest.forEach((article) => {
-    const card = document.createElement("article");
-    card.className = "article-card";
-
-    const href = `article.html?slug=${encodeURIComponent(article.slug)}`;
-
-    card.innerHTML = `
-      <h3><a href="${href}">${article.title}</a></h3>
-      <p>${article.excerpt || ""}</p>
-      <div class="article-meta">
-        <span>${formatDate(article.published_at)} · ${article.category || "Umum"}</span>
-      </div>
+  function renderLoading() {
+    articlesList.innerHTML = `
+      <article class="article-card">
+        <h3>Memuat artikel...</h3>
+        <p>Mohon tunggu sebentar.</p>
+      </article>
     `;
+  }
 
-    listEl.appendChild(card);
-  });
-}
+  function renderEmpty() {
+    articlesList.innerHTML = `
+      <article class="article-card">
+        <h3>Belum ada artikel</h3>
+        <p>Artikel yang sudah dipublikasikan akan tampil di sini.</p>
+      </article>
+    `;
+  }
 
-function formatDate(value) {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("id-ID", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+  function renderError() {
+    articlesList.innerHTML = `
+      <article class="article-card">
+        <h3>Artikel belum bisa dimuat</h3>
+        <p>Silakan coba lagi beberapa saat lagi.</p>
+      </article>
+    `;
+  }
+
+  function renderArticles(items) {
+    if (!items.length) {
+      renderEmpty();
+      return;
+    }
+
+    articlesList.innerHTML = items
+      .map((article) => {
+        const title = escapeHtml(article.title || "Untitled");
+        const excerpt = escapeHtml(article.excerpt || "");
+        const category = escapeHtml(article.category || "Artikel");
+        const publishedDate = formatDate(article.published_at);
+        const slug = encodeURIComponent(article.slug || "");
+
+        return `
+          <article class="article-card">
+            <a href="article.html?slug=${slug}">
+              <h3>${title}</h3>
+              <p>${excerpt}</p>
+              <div class="article-meta">
+                ${category}${publishedDate ? ` · ${publishedDate}` : ""}
+              </div>
+            </a>
+          </article>
+        `;
+      })
+      .join("");
+  }
+
+  async function loadPublishedArticles() {
+    try {
+      renderLoading();
+
+      const publishedArticles = await articles.listPublished({ limit: 10 });
+      renderArticles(publishedArticles);
+    } catch (error) {
+      renderError();
+    }
+  }
+
+  loadPublishedArticles();
+})();
