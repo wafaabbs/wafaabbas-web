@@ -5,7 +5,7 @@
     return;
   }
 
-  const { auth, articles } = window.WafaSupabase;
+  const { auth, articles, storage } = window.WafaSupabase;
 
   const elements = {
     logoutButton: document.getElementById("logoutButton"),
@@ -19,6 +19,9 @@
     postCategoryInput: document.getElementById("postCategoryInput"),
     postStatusInput: document.getElementById("postStatusInput"),
     postThumbnailInput: document.getElementById("postThumbnailInput"),
+    postThumbnailFileInput: document.getElementById("postThumbnailFileInput"),
+    postThumbnailPreview: document.getElementById("postThumbnailPreview"),
+    removeThumbnailButton: document.getElementById("removeThumbnailButton"),
     editorMessage: document.getElementById("editorMessage"),
     saveDraftButton: document.getElementById("saveDraftButton"),
     publishButton: document.getElementById("publishButton"),
@@ -27,6 +30,13 @@
 
   let activePostId = null;
   let slugTouched = false;
+
+  // Thumbnail state. currentThumbnailUrl = url yang sudah tersimpan di
+  // artikel (mode edit). pendingThumbnailFile = file baru yang dipilih
+  // user tapi belum di-upload (upload baru dilakukan saat Save/Publish).
+  let currentThumbnailUrl = null;
+  let pendingThumbnailFile = null;
+  let thumbnailMarkedForRemoval = false;
 
   function getPostIdFromUrl() {
     return new URLSearchParams(window.location.search).get("id");
@@ -41,9 +51,78 @@
     elements.saveDraftButton.disabled = isLoading;
     elements.publishButton.disabled = isLoading;
     elements.deletePostButton.disabled = isLoading;
+    elements.postThumbnailFileInput.disabled = isLoading;
+    elements.removeThumbnailButton.disabled = isLoading;
   }
 
-  function getPayload(status) {
+  // ---------------------------------------------------------------------
+  // Thumbnail helpers
+  // ---------------------------------------------------------------------
+
+  function showThumbnailPreview(src) {
+    elements.postThumbnailPreview.src = src;
+    elements.postThumbnailPreview.hidden = false;
+    elements.removeThumbnailButton.hidden = false;
+  }
+
+  function hideThumbnailPreview() {
+    elements.postThumbnailPreview.src = "";
+    elements.postThumbnailPreview.hidden = true;
+    elements.removeThumbnailButton.hidden = true;
+  }
+
+  function handleThumbnailFileChange(event) {
+    const file = event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    pendingThumbnailFile = file;
+    thumbnailMarkedForRemoval = false;
+
+    const previewUrl = URL.createObjectURL(file);
+    showThumbnailPreview(previewUrl);
+    setMessage("");
+  }
+
+  function handleRemoveThumbnail() {
+    pendingThumbnailFile = null;
+    thumbnailMarkedForRemoval = true;
+
+    elements.postThumbnailFileInput.value = "";
+    hideThumbnailPreview();
+  }
+
+  // Resolusi thumbnail_url final sebelum kirim ke articles.create/update.
+  // Mengembalikan string URL, atau null kalau tidak ada thumbnail.
+  async function resolveThumbnailUrl() {
+    if (pendingThumbnailFile) {
+      setMessage("Mengupload thumbnail...");
+      const result = await storage.replaceThumbnail(
+        pendingThumbnailFile,
+        currentThumbnailUrl
+      );
+      return result.publicUrl;
+    }
+
+    if (thumbnailMarkedForRemoval) {
+      if (currentThumbnailUrl) {
+        await storage.deleteThumbnailByUrl(currentThumbnailUrl);
+      }
+      return null;
+    }
+
+    return currentThumbnailUrl;
+  }
+
+  // ---------------------------------------------------------------------
+
+  async function getPayload(status) {
+    const thumbnailUrl = await resolveThumbnailUrl();
+
+    elements.postThumbnailInput.value = thumbnailUrl || "";
+
     return {
       title: elements.postTitleInput.value,
       slug: elements.postSlugInput.value,
@@ -51,7 +130,7 @@
       content: elements.postContentInput.value,
       category: elements.postCategoryInput.value,
       status,
-      thumbnail_url: elements.postThumbnailInput.value,
+      thumbnail_url: thumbnailUrl,
     };
   }
 
@@ -66,6 +145,16 @@
     elements.postCategoryInput.value = post.category || "";
     elements.postStatusInput.value = post.status || articles.status.DRAFT;
     elements.postThumbnailInput.value = post.thumbnail_url || "";
+
+    currentThumbnailUrl = post.thumbnail_url || null;
+    pendingThumbnailFile = null;
+    thumbnailMarkedForRemoval = false;
+
+    if (currentThumbnailUrl) {
+      showThumbnailPreview(currentThumbnailUrl);
+    } else {
+      hideThumbnailPreview();
+    }
 
     elements.editorPageTitle.textContent = "Edit Post";
     elements.deletePostButton.hidden = false;
@@ -104,7 +193,7 @@
     setMessage("Menyimpan artikel...");
 
     try {
-      const payload = getPayload(status);
+      const payload = await getPayload(status);
 
       if (activePostId) {
         const updatedPost = await articles.update(activePostId, payload);
@@ -143,6 +232,8 @@
     setMessage("Menghapus artikel...");
 
     try {
+      // articles.delete() di services/supabase.js sudah otomatis
+      // menghapus thumbnail terkait dari storage juga.
       await articles.delete(activePostId);
       window.location.href = "./posts.html";
     } catch (error) {
@@ -157,6 +248,7 @@
     if (!postId) {
       elements.editorPageTitle.textContent = "New Post";
       elements.deletePostButton.hidden = true;
+      hideThumbnailPreview();
       return;
     }
 
@@ -193,6 +285,16 @@
         );
       }
     });
+
+    elements.postThumbnailFileInput.addEventListener(
+      "change",
+      handleThumbnailFileChange
+    );
+
+    elements.removeThumbnailButton.addEventListener(
+      "click",
+      handleRemoveThumbnail
+    );
 
     elements.saveDraftButton.addEventListener("click", () => {
       elements.postStatusInput.value = articles.status.DRAFT;

@@ -7,6 +7,8 @@
 
   const { articles } = window.WafaSupabase;
 
+  const FALLBACK_THUMBNAIL = "assets/img/thumbnail-placeholder.png";
+
   const elements = {
     listSection: document.querySelector(".articles"),
     list: document.getElementById("article-list"),
@@ -16,6 +18,7 @@
     detailTitle: document.getElementById("detail-title"),
     detailMeta: document.getElementById("detail-meta"),
     detailContent: document.getElementById("detail-content"),
+    detailThumbnail: document.getElementById("detail-thumbnail"),
   };
 
   function getSlugFromUrl() {
@@ -90,10 +93,18 @@
         const category = escapeHtml(article.category || "Artikel");
         const publishedDate = formatDate(article.published_at);
         const slug = encodeURIComponent(article.slug || "");
+        const thumbnailUrl = article.thumbnail_url || FALLBACK_THUMBNAIL;
 
         return `
           <article class="article-card">
             <a href="article.html?slug=${slug}">
+              <img
+                src="${thumbnailUrl}"
+                alt="${title}"
+                class="article-card-thumbnail"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='${FALLBACK_THUMBNAIL}';"
+              />
               <h3>${title}</h3>
               <p>${excerpt}</p>
               <div class="article-meta">
@@ -158,6 +169,10 @@
       elements.detailMeta.textContent = "";
     }
 
+    if (elements.detailThumbnail) {
+      elements.detailThumbnail.hidden = true;
+    }
+
     if (elements.detailContent) {
       elements.detailContent.innerHTML = `
         <p>Artikel ini belum tersedia atau belum dipublikasikan.</p>
@@ -191,6 +206,19 @@
 
     if (elements.detailMeta) {
       elements.detailMeta.textContent = `${category}${publishedDate ? ` · ${publishedDate}` : ""}`;
+    }
+
+    if (elements.detailThumbnail) {
+      if (article.thumbnail_url) {
+        elements.detailThumbnail.src = article.thumbnail_url;
+        elements.detailThumbnail.alt = article.title || "";
+        elements.detailThumbnail.hidden = false;
+        elements.detailThumbnail.onerror = function () {
+          elements.detailThumbnail.hidden = true;
+        };
+      } else {
+        elements.detailThumbnail.hidden = true;
+      }
     }
 
     if (elements.detailContent) {

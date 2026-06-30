@@ -4,6 +4,9 @@ const WAFA_SUPABASE_CONFIG = {
   tables: {
     articles: "articles",
   },
+  storage: {
+    thumbnails: "thumbnails",
+  },
 };
 
 (function initWafaSupabase(global) {
@@ -29,6 +32,15 @@ const WAFA_SUPABASE_CONFIG = {
     "updated_at",
     "thumbnail_url",
   ].join(",");
+
+  const ALLOWED_THUMBNAIL_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
+
+  const MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
   function assertSupabaseSdk() {
     if (!global.supabase || typeof global.supabase.createClient !== "function") {
@@ -60,6 +72,10 @@ const WAFA_SUPABASE_CONFIG = {
 
   function getArticlesTable() {
     return getClient().from(WAFA_SUPABASE_CONFIG.tables.articles);
+  }
+
+  function getThumbnailsBucket() {
+    return getClient().storage.from(WAFA_SUPABASE_CONFIG.storage.thumbnails);
   }
 
   function normalizeSlug(value) {
@@ -127,6 +143,144 @@ const WAFA_SUPABASE_CONFIG = {
       ...(options.includeCreatedAt ? { created_at: now } : {}),
     };
   }
+
+  // ---------------------------------------------------------------------
+  // Storage helpers (thumbnail)
+  // ---------------------------------------------------------------------
+
+  function getFileExtension(file) {
+    const nameParts = String(file.name || "").split(".");
+    const extFromName =
+      nameParts.length > 1 ? nameParts.pop().toLowerCase() : "";
+
+    if (extFromName) {
+      return extFromName;
+    }
+
+    const typeMap = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+
+    return typeMap[file.type] || "bin";
+  }
+
+  function generateThumbnailFileName(file) {
+    const ext = getFileExtension(file);
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 8);
+    return `${timestamp}-${random}.${ext}`;
+  }
+
+  function assertValidThumbnailFile(file) {
+    if (!file) {
+      throw new Error("Tidak ada file yang dipilih.");
+    }
+
+    if (!ALLOWED_THUMBNAIL_TYPES.includes(file.type)) {
+      throw new Error(
+        "Format file tidak didukung. Gunakan JPG, PNG, WEBP, atau GIF."
+      );
+    }
+
+    if (file.size > MAX_THUMBNAIL_SIZE_BYTES) {
+      throw new Error("Ukuran file maksimal 5MB.");
+    }
+  }
+
+  // Ambil storage path ("nama-file.ext") dari public URL thumbnail.
+  // Mengembalikan null kalau URL tidak dikenali (misal sudah dihapus manual,
+  // atau bukan URL dari bucket thumbnails ini).
+  function getStoragePathFromPublicUrl(publicUrl) {
+    if (!publicUrl) {
+      return null;
+    }
+
+    const marker = `/storage/v1/object/public/${WAFA_SUPABASE_CONFIG.storage.thumbnails}/`;
+    const markerIndex = publicUrl.indexOf(marker);
+
+    if (markerIndex === -1) {
+      return null;
+    }
+
+    const path = publicUrl.slice(markerIndex + marker.length).split("?")[0];
+    return path ? decodeURIComponent(path) : null;
+  }
+
+  const storage = {
+    /**
+     * Upload thumbnail baru ke bucket "thumbnails".
+     * Mengembalikan { path, publicUrl }.
+     */
+    async uploadThumbnail(file) {
+      assertValidThumbnailFile(file);
+
+      const fileName = generateThumbnailFileName(file);
+
+      const { data, error } = await getThumbnailsBucket().upload(
+        fileName,
+        file,
+        {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        }
+      );
+
+      if (error) {
+        throw normalizeSupabaseError(error);
+      }
+
+      const { data: publicUrlData } = getThumbnailsBucket().getPublicUrl(
+        data.path
+      );
+
+      return {
+        path: data.path,
+        publicUrl: publicUrlData.publicUrl,
+      };
+    },
+
+    /**
+     * Hapus thumbnail dari bucket berdasarkan public URL yang tersimpan
+     * di kolom thumbnail_url. Aman dipanggil walau URL null/tidak valid;
+     * akan diam-diam diabaikan (tidak melempar error) supaya tidak
+     * memblokir flow utama (save/delete artikel).
+     */
+    async deleteThumbnailByUrl(publicUrl) {
+      const path = getStoragePathFromPublicUrl(publicUrl);
+
+      if (!path) {
+        return;
+      }
+
+      const { error } = await getThumbnailsBucket().remove([path]);
+
+      if (error) {
+        // Tidak melempar error: kegagalan hapus file lama tidak boleh
+        // menggagalkan keseluruhan flow update/delete artikel.
+        console.warn("Gagal menghapus thumbnail lama:", error.message);
+      }
+    },
+
+    /**
+     * Helper kombinasi untuk dipakai di editor: upload file baru,
+     * lalu hapus file lama (kalau ada) setelah upload baru berhasil.
+     * Urutan ini sengaja: upload dulu baru hapus lama, supaya kalau
+     * upload baru gagal, thumbnail lama tidak ikut hilang.
+     */
+    async replaceThumbnail(file, oldPublicUrl) {
+      const result = await this.uploadThumbnail(file);
+
+      if (oldPublicUrl) {
+        await this.deleteThumbnailByUrl(oldPublicUrl);
+      }
+
+      return result;
+    },
+  };
 
   const auth = {
     async getSession() {
@@ -256,8 +410,31 @@ const WAFA_SUPABASE_CONFIG = {
       );
     },
 
+    /**
+     * Delete artikel sekaligus thumbnail-nya di storage (kalau ada).
+     * Mengambil thumbnail_url dulu sebelum delete row, supaya kita tahu
+     * file mana yang harus dihapus dari bucket.
+     */
     async delete(id) {
-      return unwrapQuery(getArticlesTable().delete().eq("id", id));
+      let thumbnailUrl = null;
+
+      try {
+        const existing = await this.getById(id);
+        thumbnailUrl = existing ? existing.thumbnail_url : null;
+      } catch (err) {
+        // Kalau gagal ambil data lama, lanjut saja proses delete row.
+        // Tidak fatal untuk flow delete artikel.
+      }
+
+      const result = await unwrapQuery(
+        getArticlesTable().delete().eq("id", id)
+      );
+
+      if (thumbnailUrl) {
+        await storage.deleteThumbnailByUrl(thumbnailUrl);
+      }
+
+      return result;
     },
   };
 
@@ -268,5 +445,6 @@ const WAFA_SUPABASE_CONFIG = {
     getClient,
     auth,
     articles,
+    storage,
   };
 })(window);

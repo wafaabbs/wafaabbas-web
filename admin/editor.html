@@ -119,14 +119,38 @@
                 </select>
               </label>
 
-              <label class="admin-field">
-                <span>Thumbnail URL</span>
-                <input
-                  type="url"
-                  id="postThumbnailInput"
-                  placeholder="https://..."
+              <div class="admin-field admin-thumbnail-field">
+                <span>Thumbnail</span>
+
+                <img
+                  id="postThumbnailPreview"
+                  class="admin-thumbnail-preview"
+                  alt="Preview thumbnail"
+                  hidden
                 />
-              </label>
+
+                <input
+                  type="file"
+                  id="postThumbnailFileInput"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                />
+
+                <button
+                  type="button"
+                  class="admin-ghost-button admin-thumbnail-remove"
+                  id="removeThumbnailButton"
+                  hidden
+                >
+                  Hapus Thumbnail
+                </button>
+
+                <p class="admin-field-hint">
+                  JPG, PNG, WEBP, atau GIF. Maksimal 5MB.
+                </p>
+
+                <!-- Menyimpan thumbnail_url final yang akan dikirim ke Supabase -->
+                <input type="hidden" id="postThumbnailInput" />
+              </div>
 
               <p class="admin-form-message" id="editorMessage"></p>
 

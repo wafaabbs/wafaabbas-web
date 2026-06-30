@@ -1,30 +1,25 @@
 (function initPublicHome() {
   "use strict";
-
   const articlesList =
     document.getElementById("articlesList") ||
     document.getElementById("articleList") ||
     document.querySelector("[data-articles-list]") ||
     document.querySelector(".article-list");
-
   if (!articlesList || !window.WafaSupabase) {
     return;
   }
-
   const { articles } = window.WafaSupabase;
-
+  const FALLBACK_THUMBNAIL = "../assets/img/thumbnail-placeholder.png";
   function formatDate(value) {
     if (!value) {
       return "";
     }
-
     return new Intl.DateTimeFormat("id-ID", {
       day: "2-digit",
       month: "long",
       year: "numeric",
     }).format(new Date(value));
   }
-
   function escapeHtml(value) {
     return String(value || "")
       .replaceAll("&", "&amp;")
@@ -33,7 +28,6 @@
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
-
   function renderLoading() {
     articlesList.innerHTML = `
       <article class="article-card">
@@ -42,7 +36,6 @@
       </article>
     `;
   }
-
   function renderEmpty() {
     articlesList.innerHTML = `
       <article class="article-card">
@@ -51,7 +44,6 @@
       </article>
     `;
   }
-
   function renderError() {
     articlesList.innerHTML = `
       <article class="article-card">
@@ -60,13 +52,11 @@
       </article>
     `;
   }
-
   function renderArticles(items) {
     if (!items.length) {
       renderEmpty();
       return;
     }
-
     articlesList.innerHTML = items
       .map((article) => {
         const title = escapeHtml(article.title || "Untitled");
@@ -74,10 +64,17 @@
         const category = escapeHtml(article.category || "Artikel");
         const publishedDate = formatDate(article.published_at);
         const slug = encodeURIComponent(article.slug || "");
-
+        const thumbnailUrl = article.thumbnail_url || FALLBACK_THUMBNAIL;
         return `
           <article class="article-card">
             <a href="article.html?slug=${slug}">
+              <img
+                src="${thumbnailUrl}"
+                alt="${title}"
+                class="article-card-thumbnail"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='${FALLBACK_THUMBNAIL}';"
+              />
               <h3>${title}</h3>
               <p>${excerpt}</p>
               <div class="article-meta">
@@ -89,17 +86,14 @@
       })
       .join("");
   }
-
   async function loadPublishedArticles() {
     try {
       renderLoading();
-
       const publishedArticles = await articles.listPublished({ limit: 10 });
       renderArticles(publishedArticles);
     } catch (error) {
       renderError();
     }
   }
-
   loadPublishedArticles();
 })();
