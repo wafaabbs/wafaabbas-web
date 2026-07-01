@@ -5,7 +5,7 @@
     return;
   }
 
-  const { auth, articles, storage } = window.WafaSupabase;
+  const { auth, articles, categories, storage } = window.WafaSupabase;
 
   const elements = {
     logoutButton: document.getElementById("logoutButton"),
@@ -30,10 +30,6 @@
 
   let activePostId = null;
   let slugTouched = false;
-
-  // Thumbnail state. currentThumbnailUrl = url yang sudah tersimpan di
-  // artikel (mode edit). pendingThumbnailFile = file baru yang dipilih
-  // user tapi belum di-upload (upload baru dilakukan saat Save/Publish).
   let currentThumbnailUrl = null;
   let pendingThumbnailFile = null;
   let thumbnailMarkedForRemoval = false;
@@ -53,6 +49,47 @@
     elements.deletePostButton.disabled = isLoading;
     elements.postThumbnailFileInput.disabled = isLoading;
     elements.removeThumbnailButton.disabled = isLoading;
+    elements.postCategoryInput.disabled = isLoading;
+  }
+
+  // ---------------------------------------------------------------------
+  // Category dropdown
+  // ---------------------------------------------------------------------
+
+  async function loadCategoryDropdown(selectedCategoryId = null) {
+    const select = elements.postCategoryInput;
+
+    // Opsi kosong selalu ada di paling atas (artikel tanpa kategori).
+    select.innerHTML = '<option value="">— Tanpa kategori —</option>';
+
+    try {
+      const flat = await categories.list();
+      const tree = categories.buildTree(flat);
+      const options = categories.flattenTreeForSelect(tree);
+
+      options.forEach(({ id, name, depth }) => {
+        const option = document.createElement("option");
+        option.value = id;
+        // Indentasi visual: tiap level dapat prefix "— "
+        option.textContent = "—".repeat(depth) + (depth > 0 ? " " : "") + name;
+
+        if (id === selectedCategoryId) {
+          option.selected = true;
+        }
+
+        select.appendChild(option);
+      });
+    } catch (err) {
+      // Dropdown gagal load kategori — editor tetap bisa dipakai,
+      // hanya field kategori yang tidak bisa dipilih.
+      console.warn("Gagal memuat kategori:", err.message);
+
+      const fallback = document.createElement("option");
+      fallback.value = "";
+      fallback.textContent = "Gagal memuat kategori";
+      fallback.disabled = true;
+      select.appendChild(fallback);
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -94,8 +131,6 @@
     hideThumbnailPreview();
   }
 
-  // Resolusi thumbnail_url final sebelum kirim ke articles.create/update.
-  // Mengembalikan string URL, atau null kalau tidak ada thumbnail.
   async function resolveThumbnailUrl() {
     if (pendingThumbnailFile) {
       setMessage("Mengupload thumbnail...");
@@ -128,7 +163,8 @@
       slug: elements.postSlugInput.value,
       excerpt: elements.postExcerptInput.value,
       content: elements.postContentInput.value,
-      category: elements.postCategoryInput.value,
+      // Ambil category_id dari dropdown — string kosong → null
+      category_id: elements.postCategoryInput.value || null,
       status,
       thumbnail_url: thumbnailUrl,
     };
@@ -142,9 +178,14 @@
     elements.postSlugInput.value = post.slug || "";
     elements.postExcerptInput.value = post.excerpt || "";
     elements.postContentInput.value = post.content || "";
-    elements.postCategoryInput.value = post.category || "";
     elements.postStatusInput.value = post.status || articles.status.DRAFT;
     elements.postThumbnailInput.value = post.thumbnail_url || "";
+
+    // Setelah dropdown kategori dimuat, set selected value.
+    // Dropdown sudah pasti ter-render sebelum fillForm dipanggil
+    // karena loadCategoryDropdown() dipanggil di boot() lebih dulu.
+    const categoryId = post.category_id || (post.category && post.category.id) || null;
+    elements.postCategoryInput.value = categoryId || "";
 
     currentThumbnailUrl = post.thumbnail_url || null;
     pendingThumbnailFile = null;
@@ -232,8 +273,6 @@
     setMessage("Menghapus artikel...");
 
     try {
-      // articles.delete() di services/supabase.js sudah otomatis
-      // menghapus thumbnail terkait dari storage juga.
       await articles.delete(activePostId);
       window.location.href = "./posts.html";
     } catch (error) {
@@ -318,6 +357,9 @@
     try {
       await auth.requireSession("./login.html");
       bindEvents();
+      // Load dropdown kategori dulu sebelum loadPost,
+      // supaya saat fillForm() set selected value, option-nya sudah ada.
+      await loadCategoryDropdown();
       await loadPost();
     } catch (error) {
       setMessage(error.message || "Gagal membuka editor.", "error");

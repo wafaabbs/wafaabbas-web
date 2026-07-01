@@ -3,6 +3,7 @@ const WAFA_SUPABASE_CONFIG = {
   anonKey: "sb_publishable_SVyecFKhxY6MiJKiewluJQ_OzQHFcXF",
   tables: {
     articles: "articles",
+    categories: "categories",
   },
   storage: {
     thumbnails: "thumbnails",
@@ -19,19 +20,25 @@ const WAFA_SUPABASE_CONFIG = {
     PUBLISHED: "published",
   };
 
+  // category di-embed via Supabase foreign table join.
+  // Tiap artikel akan punya field "category" berupa object
+  // { id, name, slug, parent_id } atau null.
   const ARTICLE_COLUMNS = [
     "id",
     "title",
     "slug",
     "excerpt",
     "content",
-    "category",
+    "category_id",
+    "category:categories(id,name,slug,parent_id)",
     "status",
     "published_at",
     "created_at",
     "updated_at",
     "thumbnail_url",
   ].join(",");
+
+  const CATEGORY_COLUMNS = "id,name,slug,parent_id,created_at";
 
   const ALLOWED_THUMBNAIL_TYPES = [
     "image/jpeg",
@@ -74,6 +81,10 @@ const WAFA_SUPABASE_CONFIG = {
     return getClient().from(WAFA_SUPABASE_CONFIG.tables.articles);
   }
 
+  function getCategoriesTable() {
+    return getClient().from(WAFA_SUPABASE_CONFIG.tables.categories);
+  }
+
   function getThumbnailsBucket() {
     return getClient().storage.from(WAFA_SUPABASE_CONFIG.storage.thumbnails);
   }
@@ -99,7 +110,7 @@ const WAFA_SUPABASE_CONFIG = {
 
     if (error.code === "23505") {
       return new Error(
-        "Slug sudah digunakan artikel lain. Ganti slug dengan versi yang unik."
+        "Slug sudah digunakan. Ganti dengan versi yang unik."
       );
     }
 
@@ -135,7 +146,7 @@ const WAFA_SUPABASE_CONFIG = {
       slug,
       excerpt: String(input.excerpt || "").trim(),
       content: String(input.content || "").trim(),
-      category: String(input.category || "").trim(),
+      category_id: input.category_id || null,
       status,
       published_at: shouldPublish ? now : input.published_at || null,
       updated_at: now,
@@ -190,9 +201,6 @@ const WAFA_SUPABASE_CONFIG = {
     }
   }
 
-  // Ambil storage path ("nama-file.ext") dari public URL thumbnail.
-  // Mengembalikan null kalau URL tidak dikenali (misal sudah dihapus manual,
-  // atau bukan URL dari bucket thumbnails ini).
   function getStoragePathFromPublicUrl(publicUrl) {
     if (!publicUrl) {
       return null;
@@ -210,10 +218,6 @@ const WAFA_SUPABASE_CONFIG = {
   }
 
   const storage = {
-    /**
-     * Upload thumbnail baru ke bucket "thumbnails".
-     * Mengembalikan { path, publicUrl }.
-     */
     async uploadThumbnail(file) {
       assertValidThumbnailFile(file);
 
@@ -243,12 +247,6 @@ const WAFA_SUPABASE_CONFIG = {
       };
     },
 
-    /**
-     * Hapus thumbnail dari bucket berdasarkan public URL yang tersimpan
-     * di kolom thumbnail_url. Aman dipanggil walau URL null/tidak valid;
-     * akan diam-diam diabaikan (tidak melempar error) supaya tidak
-     * memblokir flow utama (save/delete artikel).
-     */
     async deleteThumbnailByUrl(publicUrl) {
       const path = getStoragePathFromPublicUrl(publicUrl);
 
@@ -259,18 +257,10 @@ const WAFA_SUPABASE_CONFIG = {
       const { error } = await getThumbnailsBucket().remove([path]);
 
       if (error) {
-        // Tidak melempar error: kegagalan hapus file lama tidak boleh
-        // menggagalkan keseluruhan flow update/delete artikel.
         console.warn("Gagal menghapus thumbnail lama:", error.message);
       }
     },
 
-    /**
-     * Helper kombinasi untuk dipakai di editor: upload file baru,
-     * lalu hapus file lama (kalau ada) setelah upload baru berhasil.
-     * Urutan ini sengaja: upload dulu baru hapus lama, supaya kalau
-     * upload baru gagal, thumbnail lama tidak ikut hilang.
-     */
     async replaceThumbnail(file, oldPublicUrl) {
       const result = await this.uploadThumbnail(file);
 
@@ -344,18 +334,46 @@ const WAFA_SUPABASE_CONFIG = {
     status: ARTICLE_STATUS,
     normalizeSlug,
 
-    async listPublished({ limit = 12, category } = {}) {
+    async listPublished({ limit = 12, categoryId } = {}) {
       let query = getArticlesTable()
         .select(ARTICLE_COLUMNS)
         .eq("status", ARTICLE_STATUS.PUBLISHED)
         .order("published_at", { ascending: false })
         .limit(limit);
 
-      if (category) {
-        query = query.eq("category", category);
+      if (categoryId) {
+        query = query.eq("category_id", categoryId);
       }
 
       return unwrapQuery(query);
+    },
+
+    async listPublishedByCategory(categoryId, { limit = 50 } = {}) {
+      // Panggil RPC buat ambil semua descendant ids (termasuk categoryId sendiri),
+      // lalu filter artikel berdasarkan ids tersebut.
+      const { data: rows, error } = await getClient().rpc(
+        "get_category_descendant_ids",
+        { root_id: categoryId }
+      );
+
+      if (error) {
+        throw normalizeSupabaseError(error);
+      }
+
+      const ids = (rows || []).map((r) => r.id);
+
+      if (!ids.length) {
+        return [];
+      }
+
+      return unwrapQuery(
+        getArticlesTable()
+          .select(ARTICLE_COLUMNS)
+          .eq("status", ARTICLE_STATUS.PUBLISHED)
+          .in("category_id", ids)
+          .order("published_at", { ascending: false })
+          .limit(limit)
+      );
     },
 
     async listAdmin({ status, search } = {}) {
@@ -410,11 +428,6 @@ const WAFA_SUPABASE_CONFIG = {
       );
     },
 
-    /**
-     * Delete artikel sekaligus thumbnail-nya di storage (kalau ada).
-     * Mengambil thumbnail_url dulu sebelum delete row, supaya kita tahu
-     * file mana yang harus dihapus dari bucket.
-     */
     async delete(id) {
       let thumbnailUrl = null;
 
@@ -422,7 +435,6 @@ const WAFA_SUPABASE_CONFIG = {
         const existing = await this.getById(id);
         thumbnailUrl = existing ? existing.thumbnail_url : null;
       } catch (err) {
-        // Kalau gagal ambil data lama, lanjut saja proses delete row.
         // Tidak fatal untuk flow delete artikel.
       }
 
@@ -438,6 +450,144 @@ const WAFA_SUPABASE_CONFIG = {
     },
   };
 
+  // ---------------------------------------------------------------------
+  // Categories module
+  // ---------------------------------------------------------------------
+
+  const categories = {
+    normalizeSlug,
+
+    // Ambil semua kategori flat (untuk diproses jadi tree di frontend).
+    async list() {
+      return unwrapQuery(
+        getCategoriesTable()
+          .select(CATEGORY_COLUMNS)
+          .order("name", { ascending: true })
+      );
+    },
+
+    // Ambil satu kategori by id.
+    async getById(id) {
+      return unwrapQuery(
+        getCategoriesTable().select(CATEGORY_COLUMNS).eq("id", id).single()
+      );
+    },
+
+    // Ambil satu kategori by slug.
+    async getBySlug(slug) {
+      return unwrapQuery(
+        getCategoriesTable()
+          .select(CATEGORY_COLUMNS)
+          .eq("slug", normalizeSlug(slug))
+          .single()
+      );
+    },
+
+    // Buat kategori baru.
+    async create(input) {
+      const name = String(input.name || "").trim();
+      const slug = normalizeSlug(input.slug || name);
+
+      return unwrapQuery(
+        getCategoriesTable()
+          .insert({
+            name,
+            slug,
+            parent_id: input.parent_id || null,
+          })
+          .select(CATEGORY_COLUMNS)
+          .single()
+      );
+    },
+
+    // Update nama, slug, atau parent kategori.
+    async update(id, input) {
+      const payload = {};
+
+      if (input.name !== undefined) {
+        payload.name = String(input.name).trim();
+      }
+
+      if (input.slug !== undefined) {
+        payload.slug = normalizeSlug(input.slug);
+      } else if (input.name !== undefined) {
+        // Auto-generate slug baru dari nama baru kalau slug tidak disuplai.
+        payload.slug = normalizeSlug(input.name);
+      }
+
+      if ("parent_id" in input) {
+        payload.parent_id = input.parent_id || null;
+      }
+
+      return unwrapQuery(
+        getCategoriesTable()
+          .update(payload)
+          .eq("id", id)
+          .select(CATEGORY_COLUMNS)
+          .single()
+      );
+    },
+
+    // Hapus kategori. Artikel yang punya category_id ini akan
+    // set ke NULL secara otomatis karena kolom articles.category_id
+    // didefinisikan ON DELETE SET NULL di database.
+    async delete(id) {
+      return unwrapQuery(getCategoriesTable().delete().eq("id", id));
+    },
+
+    // Ambil semua descendant id dari satu kategori (termasuk dirinya sendiri).
+    // Pakai RPC Postgres recursive yang sudah dibuat di Langkah 3 SQL.
+    async getDescendantIds(categoryId) {
+      const { data, error } = await getClient().rpc(
+        "get_category_descendant_ids",
+        { root_id: categoryId }
+      );
+
+      if (error) {
+        throw normalizeSupabaseError(error);
+      }
+
+      return (data || []).map((r) => r.id);
+    },
+
+    // Ubah array flat dari list() jadi nested tree.
+    // Return: array kategori top-level, tiap item punya property "children" (array).
+    buildTree(flatList) {
+      const map = {};
+      const roots = [];
+
+      flatList.forEach((cat) => {
+        map[cat.id] = { ...cat, children: [] };
+      });
+
+      flatList.forEach((cat) => {
+        if (cat.parent_id && map[cat.parent_id]) {
+          map[cat.parent_id].children.push(map[cat.id]);
+        } else {
+          roots.push(map[cat.id]);
+        }
+      });
+
+      return roots;
+    },
+
+    // Ubah tree jadi array flat dengan indentasi (untuk dropdown di editor).
+    // Return: array { id, name, slug, depth } sudah urut hirarki.
+    flattenTreeForSelect(tree, depth = 0) {
+      const result = [];
+
+      tree.forEach((node) => {
+        result.push({ id: node.id, name: node.name, slug: node.slug, depth });
+
+        if (node.children && node.children.length) {
+          result.push(...this.flattenTreeForSelect(node.children, depth + 1));
+        }
+      });
+
+      return result;
+    },
+  };
+
   global.WafaSupabase = {
     get client() {
       return getClient();
@@ -445,6 +595,7 @@ const WAFA_SUPABASE_CONFIG = {
     getClient,
     auth,
     articles,
+    categories,
     storage,
   };
 })(window);
