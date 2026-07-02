@@ -90,7 +90,9 @@
       .map((article) => {
         const title = escapeHtml(article.title || "Untitled");
         const excerpt = escapeHtml(article.excerpt || "");
-        const category = escapeHtml(article.category || "Artikel");
+        const category = escapeHtml(
+          (article.category && article.category.name) || "Artikel"
+        );
         const publishedDate = formatDate(article.published_at);
         const slug = encodeURIComponent(article.slug || "");
         const thumbnailUrl = article.thumbnail_url || FALLBACK_THUMBNAIL;
@@ -183,7 +185,7 @@
 
   function renderArticleDetail(article) {
     const publishedDate = formatDate(article.published_at);
-    const category = article.category || "Artikel";
+    const category = (article.category && article.category.name) || "Artikel";
 
     document.title = `${article.title} | wafaabbas.com`;
 
