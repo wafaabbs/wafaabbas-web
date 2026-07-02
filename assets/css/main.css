@@ -197,3 +197,66 @@ main.container {
     max-height: 220px;
   }
 }
+
+/* ============================================================
+   Halaman kategori publik
+   ============================================================ */
+
+/* Breadcrumb */
+.category-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.category-breadcrumb a {
+  color: #38bdf8;
+}
+
+.category-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.category-breadcrumb-sep {
+  color: #4b5563;
+}
+
+.category-breadcrumb-current {
+  color: #e5e7eb;
+}
+
+/* Chip sub-kategori */
+.category-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+}
+
+.category-chip {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.category-chip:hover {
+  border-color: #38bdf8;
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+/* Section title di halaman kategori */
+.section-title {
+  font-size: 1.1rem;
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kategori | wafaabbas.com</title>
+  <meta name="description" content="Artikel berdasarkan kategori di wafaabbas.com." />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">wafaabbas.com</h1>
+      <nav class="site-nav" aria-label="Navigasi utama">
+        <a href="index.html">Beranda</a>
+        <a href="article.html">Artikel</a>
+        <a href="about.html">Tentang</a>
+        <a href="contact.html">Kontak</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Breadcrumb -->
+    <nav class="category-breadcrumb" id="categoryBreadcrumb" aria-label="Breadcrumb">
+      <a href="index.html">Beranda</a>
+    </nav>
+
+    <!-- Hero kategori -->
+    <section class="hero">
+      <h2 id="categoryTitle">Memuat kategori...</h2>
+      <p class="muted" id="categoryDescription"></p>
+    </section>
+
+    <!-- Sub-kategori -->
+    <section id="subCategorySection" hidden>
+      <div class="section-header">
+        <h2 class="section-title">Sub-kategori</h2>
+      </div>
+      <div id="subCategoryList" class="category-chip-list"></div>
+    </section>
+
+    <!-- Daftar artikel -->
+    <section class="articles" style="margin-top: 24px;">
+      <div class="section-header">
+        <h2 class="section-title" id="articleSectionTitle">Artikel</h2>
+        <a href="article.html" class="link-small">Semua artikel</a>
+      </div>
+
+      <div id="categoryArticleList" class="article-list">
+        <article class="article-card">
+          <h3>Memuat artikel...</h3>
+          <p>Mohon tunggu sebentar.</p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>&copy; <span id="year"></span> Wafa Abbas.</small>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+  <script src="services/supabase.js"></script>
+  <script src="assets/js/category.js"></script>
+</body>
+</html>
