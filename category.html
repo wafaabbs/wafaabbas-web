@@ -12,12 +12,7 @@
   <header class="site-header">
     <div class="container">
       <h1 class="site-title">wafaabbas.com</h1>
-      <nav class="site-nav" aria-label="Navigasi utama">
-        <a href="index.html">Beranda</a>
-        <a href="article.html">Artikel</a>
-        <a href="about.html">Tentang</a>
-        <a href="contact.html">Kontak</a>
-      </nav>
+      <nav id="site-navbar" class="site-nav"></nav>
     </div>
   </header>
 
@@ -69,6 +64,7 @@
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
   <script src="services/supabase.js"></script>
+  <script src="components/navbar.js"></script>
   <script src="assets/js/category.js"></script>
 </body>
 </html>

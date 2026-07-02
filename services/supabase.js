@@ -4,6 +4,7 @@ const WAFA_SUPABASE_CONFIG = {
   tables: {
     articles: "articles",
     categories: "categories",
+    menus: "menus",
   },
   storage: {
     thumbnails: "thumbnails",
@@ -83,6 +84,10 @@ const WAFA_SUPABASE_CONFIG = {
 
   function getCategoriesTable() {
     return getClient().from(WAFA_SUPABASE_CONFIG.tables.categories);
+  }
+
+  function getMenusTable() {
+    return getClient().from(WAFA_SUPABASE_CONFIG.tables.menus);
   }
 
   function getThumbnailsBucket() {
@@ -588,6 +593,86 @@ const WAFA_SUPABASE_CONFIG = {
     },
   };
 
+
+  // ---------------------------------------------------------------------
+  // Menus module
+  // ---------------------------------------------------------------------
+
+  const MENU_COLUMNS = "id,label,url,order_index,parent_id,created_at";
+
+  const menus = {
+    // Ambil semua menu flat, urut by order_index.
+    async list() {
+      return unwrapQuery(
+        getMenusTable()
+          .select(MENU_COLUMNS)
+          .order("order_index", { ascending: true })
+      );
+    },
+
+    async getById(id) {
+      return unwrapQuery(
+        getMenusTable().select(MENU_COLUMNS).eq("id", id).single()
+      );
+    },
+
+    async create(input) {
+      return unwrapQuery(
+        getMenusTable()
+          .insert({
+            label: String(input.label || "").trim(),
+            url: String(input.url || "").trim(),
+            order_index: Number(input.order_index) || 0,
+            parent_id: input.parent_id || null,
+          })
+          .select(MENU_COLUMNS)
+          .single()
+      );
+    },
+
+    async update(id, input) {
+      const payload = {};
+
+      if (input.label !== undefined) payload.label = String(input.label).trim();
+      if (input.url !== undefined) payload.url = String(input.url).trim();
+      if (input.order_index !== undefined) payload.order_index = Number(input.order_index);
+      if ("parent_id" in input) payload.parent_id = input.parent_id || null;
+
+      return unwrapQuery(
+        getMenusTable()
+          .update(payload)
+          .eq("id", id)
+          .select(MENU_COLUMNS)
+          .single()
+      );
+    },
+
+    async delete(id) {
+      // on delete cascade di DB: submenu ikut terhapus otomatis
+      return unwrapQuery(getMenusTable().delete().eq("id", id));
+    },
+
+    // Ubah flat list jadi nested tree (sama polanya dengan categories).
+    buildTree(flatList) {
+      const map = {};
+      const roots = [];
+
+      flatList.forEach((item) => {
+        map[item.id] = { ...item, children: [] };
+      });
+
+      flatList.forEach((item) => {
+        if (item.parent_id && map[item.parent_id]) {
+          map[item.parent_id].children.push(map[item.id]);
+        } else {
+          roots.push(map[item.id]);
+        }
+      });
+
+      return roots;
+    },
+  };
+
   global.WafaSupabase = {
     get client() {
       return getClient();
@@ -596,6 +681,7 @@ const WAFA_SUPABASE_CONFIG = {
     auth,
     articles,
     categories,
+    menus,
     storage,
   };
 })(window);
