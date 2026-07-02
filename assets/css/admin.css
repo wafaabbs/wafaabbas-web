@@ -447,3 +447,70 @@ button:disabled {
   font-size: 0.75rem;
   color: #9ca3af;
 }
+
+/* ============================================================
+   Admin Categories Page
+   ============================================================ */
+
+.admin-categories-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-category-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-category-list {
+  border-top: 1px solid #1f2937;
+}
+
+.admin-category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-right: 16px;
+  border-bottom: 1px solid #1f2937;
+}
+
+.admin-category-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-category-branch {
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+.admin-category-item-info strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.admin-category-slug {
+  display: block;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.admin-category-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .admin-categories-layout {
+    grid-template-columns: 1fr;
+  }
+}
