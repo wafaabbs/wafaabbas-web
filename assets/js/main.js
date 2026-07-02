@@ -9,7 +9,7 @@
     return;
   }
   const { articles } = window.WafaSupabase;
-  const FALLBACK_THUMBNAIL = "assets/img/thumbnail-placeholder.png";
+  const FALLBACK_THUMBNAIL = "/wafaabbas-web/assets/img/thumbnail-placeholder.png";
   function formatDate(value) {
     if (!value) {
       return "";

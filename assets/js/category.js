@@ -7,7 +7,7 @@
 
   const { articles, categories } = window.WafaSupabase;
 
-  const FALLBACK_THUMBNAIL = "assets/img/thumbnail-placeholder.png";
+  const FALLBACK_THUMBNAIL = "/wafaabbas-web/assets/img/thumbnail-placeholder.png";
 
   const elements = {
     breadcrumb: document.getElementById("categoryBreadcrumb"),
