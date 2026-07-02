@@ -19,8 +19,7 @@
       <p class="site-tagline">
         Blog akuntansi, perpajakan, dan keuangan untuk praktisi Indonesia.
       </p>
-
-      <<nav id="site-navbar" class="site-nav"></nav>
+      <nav id="site-navbar" class="site-nav" aria-label="Navigasi utama"></nav>
     </div>
   </header>
 
@@ -54,6 +53,9 @@
     </div>
   </footer>
 
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="services/supabase.js"></script>
   <script src="components/navbar.js"></script>

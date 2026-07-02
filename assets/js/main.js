@@ -9,7 +9,7 @@
     return;
   }
   const { articles } = window.WafaSupabase;
-  const FALLBACK_THUMBNAIL = "../assets/img/thumbnail-placeholder.png";
+  const FALLBACK_THUMBNAIL = "assets/img/thumbnail-placeholder.png";
   function formatDate(value) {
     if (!value) {
       return "";
@@ -61,7 +61,9 @@
       .map((article) => {
         const title = escapeHtml(article.title || "Untitled");
         const excerpt = escapeHtml(article.excerpt || "");
-        const category = escapeHtml(article.category || "Artikel");
+        const category = escapeHtml(
+          (article.category && article.category.name) || "Artikel"
+        );
         const publishedDate = formatDate(article.published_at);
         const slug = encodeURIComponent(article.slug || "");
         const thumbnailUrl = article.thumbnail_url || FALLBACK_THUMBNAIL;
