@@ -1,26 +1,24 @@
 (function initNavbar() {
   "use strict";
 
-  // Navbar di-inject ke elemen dengan id="site-navbar" atau
-  // class="site-nav" yang sudah ada di HTML.
-  // Di-load setelah services/supabase.js.
-
   if (!window.WafaSupabase) {
     return;
   }
 
   const { menus } = window.WafaSupabase;
 
-  // Tentukan path prefix relatif berdasarkan lokasi halaman saat ini.
-  // Halaman di root: prefix = ""
-  // Halaman di subfolder (admin/): prefix = "../"
-  function getPathPrefix() {
-    const path = window.location.pathname;
-    const depth = (path.match(/\//g) || []).length;
-    // Kalau URL-nya /admin/xxx.html, depth >= 2 → prefix "../"
-    // Kalau URL-nya /xxx.html atau /, depth <= 1 → prefix ""
-    return depth >= 2 ? "../" : "";
+  // === BASE_PATH: deteksi subfolder deployment ===
+  // Di GitHub Pages project site, URL-nya <username>.github.io/wafaabbas-web/...
+  // jadi path pertama = nama repo. Kalau nanti custom domain (wafaabbas.com),
+  // hostname gak lagi endsWith "github.io", BASE_PATH otomatis jadi "".
+  function getBasePath() {
+    if (window.location.hostname.endsWith("github.io")) {
+      return "/wafaabbas-web";
+    }
+    return "";
   }
+
+  const BASE_PATH = getBasePath();
 
   function escapeHtml(value) {
     return String(value || "")
@@ -31,17 +29,17 @@
       .replaceAll("'", "&#039;");
   }
 
-  // Tambahkan path prefix ke URL relatif dari database.
-  // URL absolut (http/https/mailto) dan anchor (#) dibiarkan.
+  // Tambahkan BASE_PATH ke URL relatif dari database.
+  // URL absolut (http/https/mailto) dan anchor (#) dibiarkan apa adanya.
   function resolveUrl(url) {
     if (!url) return "#";
     if (url.startsWith("http") || url.startsWith("mailto") || url.startsWith("#")) {
       return url;
     }
-    return getPathPrefix() + url;
+    const cleanUrl = url.startsWith("/") ? url : "/" + url;
+    return BASE_PATH + cleanUrl;
   }
 
-  // Render satu item menu (top-level atau submenu)
   function renderMenuItem(item) {
     const label = escapeHtml(item.label);
     const url = resolveUrl(item.url);
@@ -82,14 +80,12 @@
     const items = tree.map(renderMenuItem).join("");
     nav.innerHTML = `<ul class="nav-list">${items}</ul>`;
 
-    // Bind klik untuk dropdown toggle
     nav.querySelectorAll(".nav-dropdown-toggle").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const dropdown = btn.nextElementSibling;
         const isOpen = !dropdown.hidden;
 
-        // Tutup semua dropdown lain yang terbuka dulu
         nav.querySelectorAll(".nav-dropdown").forEach((d) => {
           d.hidden = true;
         });
@@ -97,7 +93,6 @@
           b.setAttribute("aria-expanded", "false");
         });
 
-        // Toggle dropdown yang diklik
         if (!isOpen) {
           dropdown.hidden = false;
           btn.setAttribute("aria-expanded", "true");
@@ -105,7 +100,6 @@
       });
     });
 
-    // Klik di luar navbar → tutup semua dropdown
     document.addEventListener("click", () => {
       nav.querySelectorAll(".nav-dropdown").forEach((d) => {
         d.hidden = true;
@@ -122,12 +116,10 @@
       const tree = menus.buildTree(flat);
       renderNavbar(tree);
     } catch (err) {
-      // Fallback: kalau fetch gagal, navbar tetap kosong tapi halaman tidak crash
       console.warn("Navbar: gagal memuat menu.", err.message);
     }
   }
 
-  // Tunggu DOM ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {
