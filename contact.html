@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kontak | wafaabbas.com</title>
+  <meta name="description" content="Hubungi Wafa Abbas untuk konsultasi pajak, akuntansi, atau pelatihan keuangan." />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1 class="site-title">wafaabbas.com</h1>
+      <nav id="site-navbar" class="site-nav"></nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <h2>Hubungi Saya</h2>
+      <p class="muted">Ada pertanyaan, proyek, atau sekadar mau ngobrol soal keuangan? Gua terbuka.</p>
+    </section>
+
+    <div class="contact-layout">
+
+      <!-- Info kontak -->
+      <section class="contact-info">
+        <h3 class="about-section-title">Info Kontak</h3>
+
+        <div class="contact-item">
+          <span class="contact-label">Email</span>
+          <!-- GANTI: isi dengan email lo -->
+          <a href="mailto:alfaqihabbas@gmail.com" class="contact-value">GANTI@email.com</a>
+        </div>
+
+        <div class="contact-item">
+          <span class="contact-label">WhatsApp</span>
+          <!-- GANTI: isi nomor WA lo (format internasional tanpa +) -->
+          <a href="https://wa.me/6282330610780" class="contact-value" target="_blank" rel="noopener">
+            +62 GANTI NOMOR
+          </a>
+        </div>
+
+        <div class="contact-item">
+          <span class="contact-label">LinkedIn</span>
+          <!-- GANTI: isi username LinkedIn lo -->
+          <a href="https://linkedin.com/in/wafaabbs" class="contact-value" target="_blank" rel="noopener">
+            linkedin.com/in/GANTI_USERNAME
+          </a>
+        </div>
+
+        <div class="contact-item">
+          <span class="contact-label">Instagram</span>
+          <!-- GANTI: isi username Instagram lo -->
+          <a href="https://instagram.com/wafaabbs" class="contact-value" target="_blank" rel="noopener">
+            @GANTI_USERNAME
+          </a>
+        </div>
+
+        <!-- Tambah item kontak lain di sini kalau perlu -->
+
+        <div class="contact-note">
+          <p class="muted">
+            Gua biasanya balas dalam 1-2 hari kerja. Untuk pertanyaan cepat,
+            WA lebih responsif dibanding email.
+          </p>
+        </div>
+      </section>
+
+      <!-- Form kontak (EmailJS) -->
+      <section class="contact-form-section">
+        <h3 class="about-section-title">Kirim Pesan</h3>
+
+        <div id="contactFormWrapper">
+          <div class="contact-field">
+            <label for="contactName">Nama</label>
+            <input type="text" id="contactName" placeholder="Nama lo" />
+          </div>
+
+          <div class="contact-field">
+            <label for="contactEmail">Email</label>
+            <input type="email" id="contactEmail" placeholder="email@lo.com" />
+          </div>
+
+          <div class="contact-field">
+            <label for="contactSubject">Topik</label>
+            <select id="contactSubject">
+              <option value="">— Pilih topik —</option>
+              <option value="Konsultasi Pajak">Konsultasi Pajak</option>
+              <option value="Pembukuan / Laporan Keuangan">Pembukuan / Laporan Keuangan</option>
+              <option value="Pelatihan / Workshop">Pelatihan / Workshop</option>
+              <option value="Kolaborasi Konten">Kolaborasi Konten</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+
+          <div class="contact-field">
+            <label for="contactMessage">Pesan</label>
+            <textarea id="contactMessage" rows="5" placeholder="Ceritakan kebutuhan lo..."></textarea>
+          </div>
+
+          <p class="contact-form-message" id="contactMessage2"></p>
+
+          <button type="button" class="contact-submit-button" id="contactSubmitButton">
+            Kirim Pesan
+          </button>
+        </div>
+
+        <div id="contactSuccessMessage" hidden>
+          <div class="contact-success">
+            <p>✓ Pesan terkirim!</p>
+            <p class="muted">Terima kasih sudah menghubungi. Gua akan balas secepatnya.</p>
+            <button type="button" class="link-small" id="contactResetButton">Kirim pesan lain</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>&copy; <span id="year"></span> Wafa Abbas.</small>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+  <script src="services/supabase.js"></script>
+  <script src="components/navbar.js"></script>
+  <script>
+    // ============================================================
+    // EmailJS Setup
+    // GANTI nilai-nilai berikut dengan kredensial EmailJS lo:
+    //
+    // 1. Daftar di https://emailjs.com
+    // 2. Buat Email Service (Gmail, Outlook, dll) → dapat SERVICE_ID
+    // 3. Buat Email Template → dapat TEMPLATE_ID
+    //    Template variable yang dipakai: {{from_name}}, {{from_email}},
+    //    {{subject}}, {{message}}
+    // 4. Salin Public Key dari Account > API Keys → dapat PUBLIC_KEY
+    // ============================================================
+
+    const EMAILJS_PUBLIC_KEY  = "OjV8qCdpdpUvMszzH";   // dari EmailJS Account > API Keys
+    const EMAILJS_SERVICE_ID  = "service_kjyltzk";   // dari EmailJS Email Services
+    const EMAILJS_TEMPLATE_ID = "OjV8qCdpdpUvMszzH";  // dari EmailJS Email Templates
+
+    (function initContactForm() {
+      "use strict";
+
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+      const nameInput    = document.getElementById("contactName");
+      const emailInput   = document.getElementById("contactEmail");
+      const subjectInput = document.getElementById("contactSubject");
+      const msgInput     = document.getElementById("contactMessage");
+      const msgEl        = document.getElementById("contactMessage2");
+      const submitBtn    = document.getElementById("contactSubmitButton");
+      const formWrapper  = document.getElementById("contactFormWrapper");
+      const successEl    = document.getElementById("contactSuccessMessage");
+      const resetBtn     = document.getElementById("contactResetButton");
+
+      function setFormMessage(text, type = "neutral") {
+        msgEl.textContent = text;
+        msgEl.dataset.type = type;
+      }
+
+      function validateForm() {
+        if (!nameInput.value.trim()) {
+          setFormMessage("Nama wajib diisi.", "error");
+          nameInput.focus();
+          return false;
+        }
+
+        if (!emailInput.value.trim() || !emailInput.value.includes("@")) {
+          setFormMessage("Email tidak valid.", "error");
+          emailInput.focus();
+          return false;
+        }
+
+        if (!msgInput.value.trim()) {
+          setFormMessage("Pesan wajib diisi.", "error");
+          msgInput.focus();
+          return false;
+        }
+
+        return true;
+      }
+
+      submitBtn.addEventListener("click", async () => {
+        if (!validateForm()) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Mengirim...";
+        setFormMessage("");
+
+        try {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            from_name:  nameInput.value.trim(),
+            from_email: emailInput.value.trim(),
+            subject:    subjectInput.value || "Pesan dari wafaabbas.com",
+            message:    msgInput.value.trim(),
+          });
+
+          formWrapper.hidden = true;
+          successEl.hidden = false;
+        } catch (err) {
+          setFormMessage("Gagal mengirim pesan. Coba lagi atau hubungi langsung via WA/email.", "error");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Kirim Pesan";
+        }
+      });
+
+      resetBtn.addEventListener("click", () => {
+        nameInput.value = "";
+        emailInput.value = "";
+        subjectInput.value = "";
+        msgInput.value = "";
+        setFormMessage("");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Kirim Pesan";
+        formWrapper.hidden = false;
+        successEl.hidden = true;
+      });
+    })();
+  </script>
+</body>
+</html>
