@@ -679,3 +679,37 @@ main.container {
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* ============================================================
+   Lang toggle + suppress Google Translate banner
+   ============================================================ */
+
+.nav-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #38bdf8;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.nav-lang-toggle:hover {
+  border-color: #38bdf8;
+  background: #0c2233;
+}
+
+.goog-te-banner-frame,
+.skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+}
