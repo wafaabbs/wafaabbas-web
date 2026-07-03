@@ -262,7 +262,7 @@ main.container {
 }
 
 /* ============================================================
-   Dynamic navbar (components/navbar.js)
+   Dynamic navbar — multi-level (components/navbar.js)
    ============================================================ */
 
 .nav-list {
@@ -278,6 +278,7 @@ main.container {
   position: relative;
 }
 
+/* Top-level nav link / button */
 .nav-link {
   display: inline-flex;
   align-items: center;
@@ -287,6 +288,7 @@ main.container {
   border: 1px solid transparent;
   background: none;
   color: #e5e7eb;
+  font: inherit;
   font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
@@ -302,6 +304,7 @@ main.container {
   opacity: 0.7;
 }
 
+/* Level 1 dropdown — muncul di bawah top-level item */
 .nav-dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -317,17 +320,44 @@ main.container {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
+/* Link / button di dalam dropdown */
 .nav-dropdown-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   padding: 8px 16px;
   color: #e5e7eb;
+  font: inherit;
   font-size: 0.9rem;
   white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
 }
 
 .nav-dropdown-link:hover {
   background: #1e293b;
   color: #38bdf8;
+}
+
+/* Item di dalam dropdown yang punya children */
+.nav-dropdown .nav-item {
+  position: relative;
+}
+
+/* Level 2+ subdropdown — flyout ke kanan */
+.nav-subdropdown {
+  top: 0;
+  left: 100%;
+  margin-left: 4px;
+}
+
+.nav-sub-caret {
+  font-size: 1rem;
+  opacity: 0.7;
+  flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
@@ -336,6 +366,7 @@ main.container {
     gap: 2px;
   }
 
+  /* Semua dropdown jadi stacked di mobile */
   .nav-dropdown {
     position: static;
     box-shadow: none;
@@ -343,6 +374,12 @@ main.container {
     border-left: 2px solid #334155;
     border-radius: 0;
     margin-left: 12px;
+  }
+
+  /* Level 2+ indent lebih dalam */
+  .nav-subdropdown {
+    margin-left: 24px;
+    border-left-color: #1e3a5f;
   }
 }
 

@@ -17,28 +17,21 @@
   // - Kalau tidak ada (deploy di root domain) → BASE_PATH = "/"
   //
   // Contoh:
-  // "/wafaabbas-web/index.html"      → BASE_PATH = "/wafaabbas-web/"
-  // "/wafaabbas-web/admin/posts.html"→ BASE_PATH = "/wafaabbas-web/"
-  // "/index.html"                    → BASE_PATH = "/"
+  // "/wafaabbas-web/index.html"       → BASE_PATH = "/wafaabbas-web/"
+  // "/wafaabbas-web/admin/posts.html" → BASE_PATH = "/wafaabbas-web/"
+  // "/index.html"                     → BASE_PATH = "/"
   // ---------------------------------------------------------------------
 
   function detectBasePath() {
     const parts = window.location.pathname.split("/").filter(Boolean);
-    // Kalau tidak ada segmen, atau segmen pertama adalah file (.html),
-    // berarti situs di-serve dari root.
     if (!parts.length || parts[0].includes(".")) {
       return "/";
     }
-    // Segmen pertama adalah subfolder repo.
     return "/" + parts[0] + "/";
   }
 
   const BASE_PATH = detectBasePath();
 
-  // Resolve URL dari database ke URL absolut yang benar.
-  // - URL sudah absolut (http/https/mailto/#) → dibiarkan
-  // - URL sudah mulai dengan BASE_PATH → dibiarkan (tidak double-prefix)
-  // - URL relatif → prepend BASE_PATH
   function resolveUrl(url) {
     if (!url) return "#";
     if (
@@ -49,73 +42,92 @@
     ) {
       return url;
     }
-    // Buang leading slash kalau ada, biar tidak jadi double slash
     return BASE_PATH + url.replace(/^\//, "");
   }
 
   function escapeHtml(value) {
     return String(value || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
+      .replaceAll("&", "&")
+      .replaceAll("<", "<")
+      .replaceAll(">", ">")
+      .replaceAll('"', """)
       .replaceAll("'", "&#039;");
   }
 
-  function renderMenuItem(item) {
+  // ---------------------------------------------------------------------
+  // renderMenuItem — rekursif, support multi-level tanpa batas kedalaman.
+  //
+  // depth=0 → top-level navbar item
+  // depth>0 → di dalam dropdown (flyout ke kanan desktop, indent mobile)
+  // ---------------------------------------------------------------------
+  function renderMenuItem(item, depth) {
+    depth = depth || 0;
     const label = escapeHtml(item.label);
     const url = resolveUrl(item.url);
     const hasChildren = item.children && item.children.length > 0;
 
+    // Tidak ada children → link biasa
     if (!hasChildren) {
-      return `<li class="nav-item"><a href="${url}" class="nav-link">${label}</a></li>`;
+      if (depth === 0) {
+        return `<li class="nav-item"><a href="${url}" class="nav-link">${label}</a></li>`;
+      }
+      return `<li class="nav-item"><a href="${url}" class="nav-dropdown-link">${label}</a></li>`;
     }
 
-    const submenuItems = item.children
-      .map((child) => {
-        const childLabel = escapeHtml(child.label);
-        const childUrl = resolveUrl(child.url);
-        return `<li><a href="${childUrl}" class="nav-dropdown-link">${childLabel}</a></li>`;
-      })
+    // Ada children → render toggle + submenu rekursif
+    const childrenHtml = item.children
+      .map(function (child) { return renderMenuItem(child, depth + 1); })
       .join("");
 
-    return `
-      <li class="nav-item nav-item--has-dropdown">
-        <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false">
+    if (depth === 0) {
+      // Top-level: dropdown ke bawah
+      return `<li class="nav-item nav-item--has-dropdown">
+        <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">
           ${label}
           <span class="nav-dropdown-caret" aria-hidden="true">▾</span>
         </button>
         <ul class="nav-dropdown" hidden>
-          ${submenuItems}
+          ${childrenHtml}
         </ul>
-      </li>
-    `;
+      </li>`;
+    }
+
+    // Level 2+: flyout ke kanan
+    return `<li class="nav-item nav-item--has-dropdown">
+      <button type="button" class="nav-dropdown-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">
+        <span>${label}</span>
+        <span class="nav-dropdown-caret nav-sub-caret" aria-hidden="true">›</span>
+      </button>
+      <ul class="nav-dropdown nav-subdropdown" hidden>
+        ${childrenHtml}
+      </ul>
+    </li>`;
   }
 
   function renderNavbar(tree) {
     const nav = document.getElementById("site-navbar");
+    if (!nav) return;
 
-    if (!nav) {
-      return;
-    }
-
-    const items = tree.map(renderMenuItem).join("");
+    const items = tree.map(function (item) { return renderMenuItem(item, 0); }).join("");
     nav.innerHTML = `<ul class="nav-list">${items}</ul>`;
 
-    // Bind klik untuk dropdown toggle
-    nav.querySelectorAll(".nav-dropdown-toggle").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+    // Bind klik untuk semua toggle — bekerja di semua level
+    nav.querySelectorAll(".nav-dropdown-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
         e.stopPropagation();
         const dropdown = btn.nextElementSibling;
         const isOpen = !dropdown.hidden;
 
-        // Tutup semua dropdown lain dulu
-        nav.querySelectorAll(".nav-dropdown").forEach((d) => {
-          d.hidden = true;
-        });
-        nav.querySelectorAll(".nav-dropdown-toggle").forEach((b) => {
-          b.setAttribute("aria-expanded", "false");
-        });
+        // Tutup siblings di level yang sama saja (bukan seluruh nav)
+        const parentList = btn.closest("ul");
+        if (parentList) {
+          parentList.querySelectorAll(":scope > .nav-item > .nav-dropdown").forEach(function (d) {
+            d.hidden = true;
+          });
+          parentList.querySelectorAll(":scope > .nav-item > .nav-dropdown-toggle").forEach(function (b) {
+            b.setAttribute("aria-expanded", "false");
+          });
+        }
 
         // Toggle yang diklik
         if (!isOpen) {
@@ -126,11 +138,9 @@
     });
 
     // Klik di luar navbar → tutup semua dropdown
-    document.addEventListener("click", () => {
-      nav.querySelectorAll(".nav-dropdown").forEach((d) => {
-        d.hidden = true;
-      });
-      nav.querySelectorAll(".nav-dropdown-toggle").forEach((b) => {
+    document.addEventListener("click", function () {
+      nav.querySelectorAll(".nav-dropdown").forEach(function (d) { d.hidden = true; });
+      nav.querySelectorAll(".nav-dropdown-toggle").forEach(function (b) {
         b.setAttribute("aria-expanded", "false");
       });
     });
