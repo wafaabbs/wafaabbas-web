@@ -7,18 +7,51 @@
 
   const { menus } = window.WafaSupabase;
 
-  // === BASE_PATH: deteksi subfolder deployment ===
-  // Di GitHub Pages project site, URL-nya <username>.github.io/wafaabbas-web/...
-  // jadi path pertama = nama repo. Kalau nanti custom domain (wafaabbas.com),
-  // hostname gak lagi endsWith "github.io", BASE_PATH otomatis jadi "".
-  function getBasePath() {
-    if (window.location.hostname.endsWith("github.io")) {
-      return "/wafaabbas-web";
+  // ---------------------------------------------------------------------
+  // BASE_PATH — deteksi otomatis subfolder repo dari pathname.
+  //
+  // Cara kerja:
+  // - Ambil pathname saat ini, misal "/wafaabbas-web/index.html"
+  // - Cari segmen pertama setelah root ("/") yang bukan file HTML
+  // - Kalau ada → itu subfolder repo, jadikan BASE_PATH
+  // - Kalau tidak ada (deploy di root domain) → BASE_PATH = "/"
+  //
+  // Contoh:
+  // "/wafaabbas-web/index.html"      → BASE_PATH = "/wafaabbas-web/"
+  // "/wafaabbas-web/admin/posts.html"→ BASE_PATH = "/wafaabbas-web/"
+  // "/index.html"                    → BASE_PATH = "/"
+  // ---------------------------------------------------------------------
+
+  function detectBasePath() {
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    // Kalau tidak ada segmen, atau segmen pertama adalah file (.html),
+    // berarti situs di-serve dari root.
+    if (!parts.length || parts[0].includes(".")) {
+      return "/";
     }
-    return "";
+    // Segmen pertama adalah subfolder repo.
+    return "/" + parts[0] + "/";
   }
 
-  const BASE_PATH = getBasePath();
+  const BASE_PATH = detectBasePath();
+
+  // Resolve URL dari database ke URL absolut yang benar.
+  // - URL sudah absolut (http/https/mailto/#) → dibiarkan
+  // - URL sudah mulai dengan BASE_PATH → dibiarkan (tidak double-prefix)
+  // - URL relatif → prepend BASE_PATH
+  function resolveUrl(url) {
+    if (!url) return "#";
+    if (
+      url.startsWith("http") ||
+      url.startsWith("mailto") ||
+      url.startsWith("#") ||
+      url.startsWith(BASE_PATH)
+    ) {
+      return url;
+    }
+    // Buang leading slash kalau ada, biar tidak jadi double slash
+    return BASE_PATH + url.replace(/^\//, "");
+  }
 
   function escapeHtml(value) {
     return String(value || "")
@@ -27,17 +60,6 @@
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
-  }
-
-  // Tambahkan BASE_PATH ke URL relatif dari database.
-  // URL absolut (http/https/mailto) dan anchor (#) dibiarkan apa adanya.
-  function resolveUrl(url) {
-    if (!url) return "#";
-    if (url.startsWith("http") || url.startsWith("mailto") || url.startsWith("#")) {
-      return url;
-    }
-    const cleanUrl = url.startsWith("/") ? url : "/" + url;
-    return BASE_PATH + cleanUrl;
   }
 
   function renderMenuItem(item) {
@@ -80,12 +102,14 @@
     const items = tree.map(renderMenuItem).join("");
     nav.innerHTML = `<ul class="nav-list">${items}</ul>`;
 
+    // Bind klik untuk dropdown toggle
     nav.querySelectorAll(".nav-dropdown-toggle").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const dropdown = btn.nextElementSibling;
         const isOpen = !dropdown.hidden;
 
+        // Tutup semua dropdown lain dulu
         nav.querySelectorAll(".nav-dropdown").forEach((d) => {
           d.hidden = true;
         });
@@ -93,6 +117,7 @@
           b.setAttribute("aria-expanded", "false");
         });
 
+        // Toggle yang diklik
         if (!isOpen) {
           dropdown.hidden = false;
           btn.setAttribute("aria-expanded", "true");
@@ -100,6 +125,7 @@
       });
     });
 
+    // Klik di luar navbar → tutup semua dropdown
     document.addEventListener("click", () => {
       nav.querySelectorAll(".nav-dropdown").forEach((d) => {
         d.hidden = true;
