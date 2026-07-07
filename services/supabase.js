@@ -5,6 +5,8 @@ const WAFA_SUPABASE_CONFIG = {
     articles: "articles",
     categories: "categories",
     menus: "menus",
+    featured_posts: "featured_posts",
+    banners: "banners",
   },
   storage: {
     thumbnails: "thumbnails",
@@ -673,6 +675,144 @@ const WAFA_SUPABASE_CONFIG = {
     },
   };
 
+
+  function getFeaturedPostsTable() {
+    return getClient().from(WAFA_SUPABASE_CONFIG.tables.featured_posts);
+  }
+
+  function getBannersTable() {
+    return getClient().from(WAFA_SUPABASE_CONFIG.tables.banners);
+  }
+
+  // FEATURED_COLUMNS: join artikel lengkap dari featured_posts
+  // article_id di featured_posts adalah bigint (sesuai articles.id)
+  const FEATURED_COLUMNS = "id,position,article_id,articles:article_id(" + [
+    "id",
+    "title",
+    "slug",
+    "excerpt",
+    "category_id",
+    "category:categories(id,name,slug,parent_id)",
+    "status",
+    "published_at",
+    "thumbnail_url",
+  ].join(",") + ")";
+
+  const BANNER_COLUMNS = "id,title,image_url,link_url,order_index,is_active,created_at";
+
+  // ---------------------------------------------------------------------
+  // Featured Posts module
+  // ---------------------------------------------------------------------
+  const featured = {
+    // Ambil semua featured posts urut by position (1, 2, 3)
+    async list() {
+      return unwrapQuery(
+        getFeaturedPostsTable()
+          .select(FEATURED_COLUMNS)
+          .order("position", { ascending: true })
+      );
+    },
+
+    async getByPosition(position) {
+      return unwrapQuery(
+        getFeaturedPostsTable()
+          .select(FEATURED_COLUMNS)
+          .eq("position", position)
+          .single()
+      );
+    },
+
+    // Set artikel di posisi tertentu (upsert by position)
+    async setPosition(position, articleId) {
+      const { data, error } = await getFeaturedPostsTable()
+        .upsert(
+          { position, article_id: articleId },
+          { onConflict: "position" }
+        )
+        .select(FEATURED_COLUMNS)
+        .single();
+
+      if (error) throw normalizeSupabaseError(error);
+      return data;
+    },
+
+    async delete(id) {
+      return unwrapQuery(getFeaturedPostsTable().delete().eq("id", id));
+    },
+
+    async deleteByPosition(position) {
+      return unwrapQuery(
+        getFeaturedPostsTable().delete().eq("position", position)
+      );
+    },
+  };
+
+  // ---------------------------------------------------------------------
+  // Banners module
+  // ---------------------------------------------------------------------
+  const banners = {
+    // Publik: hanya banner aktif
+    async listActive() {
+      return unwrapQuery(
+        getBannersTable()
+          .select(BANNER_COLUMNS)
+          .eq("is_active", true)
+          .order("order_index", { ascending: true })
+      );
+    },
+
+    // Admin: semua banner termasuk non-aktif
+    async listAll() {
+      return unwrapQuery(
+        getBannersTable()
+          .select(BANNER_COLUMNS)
+          .order("order_index", { ascending: true })
+      );
+    },
+
+    async getById(id) {
+      return unwrapQuery(
+        getBannersTable().select(BANNER_COLUMNS).eq("id", id).single()
+      );
+    },
+
+    async create(input) {
+      return unwrapQuery(
+        getBannersTable()
+          .insert({
+            title: String(input.title || "").trim(),
+            image_url: String(input.image_url || "").trim(),
+            link_url: String(input.link_url || "").trim() || null,
+            order_index: Number(input.order_index) || 0,
+            is_active: input.is_active !== false,
+          })
+          .select(BANNER_COLUMNS)
+          .single()
+      );
+    },
+
+    async update(id, input) {
+      const payload = {};
+      if (input.title !== undefined) payload.title = String(input.title).trim();
+      if (input.image_url !== undefined) payload.image_url = String(input.image_url).trim();
+      if ("link_url" in input) payload.link_url = String(input.link_url || "").trim() || null;
+      if (input.order_index !== undefined) payload.order_index = Number(input.order_index);
+      if (input.is_active !== undefined) payload.is_active = Boolean(input.is_active);
+
+      return unwrapQuery(
+        getBannersTable()
+          .update(payload)
+          .eq("id", id)
+          .select(BANNER_COLUMNS)
+          .single()
+      );
+    },
+
+    async delete(id) {
+      return unwrapQuery(getBannersTable().delete().eq("id", id));
+    },
+  };
+
   global.WafaSupabase = {
     get client() {
       return getClient();
@@ -682,6 +822,8 @@ const WAFA_SUPABASE_CONFIG = {
     articles,
     categories,
     menus,
+    featured,
+    banners,
     storage,
   };
 })(window);
