@@ -8,34 +8,7 @@
   <link rel="stylesheet" href="assets/css/main.css" />
 </head>
 <body>
-
-  <!-- ============================================================
-       HEADER — Two-level sticky
-       ============================================================ -->
-  <header class="site-header">
-    <!-- Top bar: brand + actions -->
-    <div class="site-topbar">
-      <div class="container">
-        <a href="index.html" class="site-brand">
-          <div class="site-logo" aria-hidden="true">W</div>
-          <div class="site-brand-text">
-            <span class="site-title">wafaabbas.com</span>
-            <span class="site-tagline">Akuntansi · Perpajakan · Keuangan</span>
-          </div>
-        </a>
-        <div class="site-topbar-actions">
-          <a href="admin/login.html" class="btn-login">Login</a>
-        </div>
-      </div>
-    </div>
-    <!-- Nav bar: dynamic menu -->
-    <div class="site-navbar">
-      <div class="container">
-        <nav id="site-navbar" aria-label="Navigasi utama"></nav>
-      </div>
-    </div>
-  </header>
-
+<div id="site-header-mount"></div>
   <!-- ============================================================
        HERO — Banner iklan
        ============================================================ -->
@@ -94,6 +67,7 @@
   </script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="services/supabase.js"></script>
+  <script src="components/header.js"></script>
   <script src="components/navbar.js"></script>
   <script src="components/translate.js"></script>
   <script src="components/font-size-toggle.js"></script>

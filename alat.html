@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+
+        .site-footer {
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div id="site-header-mount"></div>
+
+    <!-- Content -->
+    <main>
+        <h1>Hello, World!</h1>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <small>&copy; <span id="year"></span> Wafa Abbas.</small>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+
+    <!-- External Scripts -->
+    <script src="services/supabase.js" defer></script>
+    <script src="components/header.js"></script>
+    <script src="components/navbar.js" defer></script>
+    <script src="components/translate.js"></script>
+    <script src="components/font-size-toggle.js" defer></script>
+
+</body>
+</html>

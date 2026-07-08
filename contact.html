@@ -11,13 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
-      <h1 class="site-title">wafaabbas.com</h1>
-      <nav id="site-navbar" class="site-nav"></nav>
-    </div>
-  </header>
-
+<div id="site-header-mount"></div>
   <main class="container">
 
     <section class="hero">
@@ -133,8 +127,9 @@
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
   <script src="services/supabase.js"></script>
-  <script src="components/translate.js"></script>
+  <script src="components/header.js"></script>
   <script src="components/navbar.js"></script>
+  <script src="components/translate.js"></script>
   <script src="components/font-size-toggle.js"></script>
   <script>
     // ============================================================
