@@ -600,7 +600,7 @@ const WAFA_SUPABASE_CONFIG = {
   // Menus module
   // ---------------------------------------------------------------------
 
-  const MENU_COLUMNS = "id,label,url,order_index,parent_id,created_at";
+  const MENU_COLUMNS = "id,label,url,order_index,parent_id,icon_name,description,created_at";
 
   const menus = {
     // Ambil semua menu flat, urut by order_index.
@@ -626,6 +626,8 @@ const WAFA_SUPABASE_CONFIG = {
             url: String(input.url || "").trim(),
             order_index: Number(input.order_index) || 0,
             parent_id: input.parent_id || null,
+            icon_name: String(input.icon_name || "").trim() || null,
+            description: String(input.description || "").trim() || null,
           })
           .select(MENU_COLUMNS)
           .single()
