@@ -6,12 +6,10 @@
   <title>Kontak | wafaabbas.com</title>
   <meta name="description" content="Hubungi Wafa Abbas untuk konsultasi pajak, akuntansi, atau pelatihan keuangan." />
   <link rel="stylesheet" href="assets/css/main.css" />
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <!-- EmailJS SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 <div id="site-header-mount"></div>
+
   <main class="container">
 
     <section class="hero">
@@ -117,20 +115,18 @@
 
   </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>&copy; <span id="year"></span> Wafa Abbas.</small>
-    </div>
-  </footer>
+<div id="site-footer-mount"></div>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="services/supabase.js"></script>
   <script src="components/header.js"></script>
-  <script src="components/navbar.js"></script>
-  <script src="components/translate.js"></script>
   <script src="components/font-size-toggle.js"></script>
+  <script src="components/translate.js"></script>
+  <script src="components/navbar.js"></script>
+
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
   <script>
     // ============================================================
     // EmailJS Setup

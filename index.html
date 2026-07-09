@@ -9,6 +9,7 @@
 </head>
 <body>
 <div id="site-header-mount"></div>
+
   <!-- ============================================================
        HERO — Banner iklan
        ============================================================ -->
@@ -43,7 +44,6 @@
         <h2 id="articles-heading">Artikel Terbaru</h2>
         <a href="article.html" class="link-small">Lihat semua →</a>
       </div>
-
       <div id="article-list" class="article-list" data-articles-list>
         <!-- Loading skeleton -->
         <div class="article-card article-card--skeleton"></div>
@@ -53,24 +53,14 @@
     </section>
   </main>
 
-  <!-- ============================================================
-       FOOTER
-       ============================================================ -->
-  <footer class="site-footer">
-    <div class="container">
-      <small>&copy; <span id="year"></span> Wafa Abbas.</small>
-    </div>
-  </footer>
+<div id="site-footer-mount"></div>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="services/supabase.js"></script>
   <script src="components/header.js"></script>
-  <script src="components/navbar.js"></script>
-  <script src="components/translate.js"></script>
   <script src="components/font-size-toggle.js"></script>
+  <script src="components/translate.js"></script>
+  <script src="components/navbar.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>
