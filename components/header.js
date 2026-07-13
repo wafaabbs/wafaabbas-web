@@ -89,14 +89,17 @@
 
     const dropdownItems = item.children.map(renderDropdownItem).join("");
 
+    // Split: link untuk navigasi + tombol chevron untuk toggle dropdown
     return `
       <li class="nav-item nav-item--has-dropdown">
-        <button type="button" class="nav-link nav-dropdown-toggle" aria-expanded="false" aria-haspopup="true">
-          ${label}
-          <svg class="nav-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
+        <div class="nav-link-group">
+          <a href="${url}" class="nav-link nav-link--parent">${label}</a>
+          <button type="button" class="nav-dropdown-toggle nav-caret-btn" aria-expanded="false" aria-haspopup="true" aria-label="Buka submenu ${label}">
+            <svg class="nav-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
         <div class="nav-dropdown" hidden>
           <ul class="nav-dropdown-list">
             ${dropdownItems}
@@ -205,21 +208,27 @@
   // Bind dropdown events (desktop)
   // ------------------------------------------------------------------
   function bindDesktopDropdowns(navList) {
-    const toggles = navList.querySelectorAll(".nav-dropdown-toggle");
+    const toggles = navList.querySelectorAll(".nav-caret-btn");
 
     toggles.forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const dropdown = btn.nextElementSibling;
+        // dropdown adalah sibling dari .nav-link-group (parent btn)
+        const linkGroup = btn.closest(".nav-link-group");
+        const dropdown = linkGroup ? linkGroup.nextElementSibling : null;
+        if (!dropdown) return;
+
         const isOpen = !dropdown.hidden;
 
         // Tutup semua dropdown lain
         navList.querySelectorAll(".nav-dropdown").forEach((d) => { d.hidden = true; });
-        navList.querySelectorAll(".nav-dropdown-toggle").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+        navList.querySelectorAll(".nav-caret-btn").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+        navList.querySelectorAll(".nav-caret-btn").forEach((b) => { b.closest(".nav-link-group") && b.closest(".nav-link-group").classList.remove("nav-link-group--open"); });
 
         if (!isOpen) {
           dropdown.hidden = false;
           btn.setAttribute("aria-expanded", "true");
+          linkGroup && linkGroup.classList.add("nav-link-group--open");
         }
       });
     });
@@ -227,14 +236,16 @@
     // Klik luar → tutup semua
     document.addEventListener("click", () => {
       navList.querySelectorAll(".nav-dropdown").forEach((d) => { d.hidden = true; });
-      navList.querySelectorAll(".nav-dropdown-toggle").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+      navList.querySelectorAll(".nav-caret-btn").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+      navList.querySelectorAll(".nav-link-group").forEach((g) => { g.classList.remove("nav-link-group--open"); });
     });
 
     // Escape key → tutup semua
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         navList.querySelectorAll(".nav-dropdown").forEach((d) => { d.hidden = true; });
-        navList.querySelectorAll(".nav-dropdown-toggle").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+        navList.querySelectorAll(".nav-caret-btn").forEach((b) => { b.setAttribute("aria-expanded", "false"); });
+        navList.querySelectorAll(".nav-link-group").forEach((g) => { g.classList.remove("nav-link-group--open"); });
       }
     });
   }
